@@ -2,7 +2,12 @@
 #define BUF_SIZE 500000			// about 10 seconds of buffer (@ 48K samples/sec)
 #define BUF_THRESHOLD 96		// 75% of 128 word buffer
 
+/* Definition of Task Priorities */
+#define _PRIORITY      1
+#define TASK2_PRIORITY      2
+
 #include <stdio.h>
+#include "includes.h"
 #include "altera_up_avalon_character_lcd.h"
 #include "altera_up_avalon_parallel_port.h"
 #include "string.h"
@@ -17,104 +22,113 @@ void VGA_box (int, int, int, int, short);
 void HEX_PS2(char, char, char);
 void check_KEYs( int *, int *, int * );
 
-/********************************************************************************
- * This program demonstrates use of the media ports in the DE2 Media Computer
- *
- * It performs the following:
- *  	1. records audio for about 10 seconds when KEY[1] is pressed. LEDG[0] is
- *  	   lit while recording
- * 	2. plays the recorded audio when KEY[2] is pressed. LEDG[1] is lit while
- * 	   playing
- * 	3. Draws a blue box on the VGA display, and places a text string inside
- * 	   the box
- * 	4. Shows a text message on the LCD display
- * 	5. Displays the last three bytes of data received from the PS/2 port
- * 	   on the HEX displays on the DE2 board
-********************************************************************************/
-int main(void)
+/* Definition of Task stacksize */
+#define   TASK_STACKSIZE       2048
+OS_STK    _stk[TASK_STACKSIZE];
+OS_STK    task2_stk[TASK_STACKSIZE];
+
+/*intitalizing semaphores */
+ALT_SEM(reset) //for reset
+
+/* Prints "Hello World" and sleeps for three seconds */
+void Achtergrond (void* pdata)
 {
-	/* Declare volatile pointers to I/O registers (volatile means that IO load
-	   and store instructions will be used to access these pointer locations,
-	   instead of regular memory loads and stores) */
-  	volatile int * green_LED_ptr = (int *) 0x10000010;		// green LED address
-	volatile int * audio_ptr = (int *) 0x10003040;			// audio port address
-	volatile int * PS2_ptr = (int *) 0x10000100;				// PS/2 port address
+  VGA_box(0,0,319,239,0x00F0); //clear screen
 
-	/* used for audio record/playback */
-	int fifospace, leftdata, rightdata;
-	int record = 0, play = 0, buffer_index = 0;
-	int left_buffer[BUF_SIZE];
-	int right_buffer[BUF_SIZE];
+  while (1)
+  {
+	  ALT_SEM_PEND(reset, 0);// whenever the semaphore reset is posted, this will clear the screen and set default background.
 
-	/* used for PS/2 port data */
-	int PS2_data, RVALID;
-	char byte1 = 0, byte2 = 0, byte3 = 0;
-
-	/* create a message to be displayed on the VGA and LCD displays */
-	char text_top_row[40] = "Loading\0";
-	char text_bottom_row[40] = "Loading screen\0";
-
-	/* output text message to the LCD */
-	//LCD_cursor (0,0);										// set LCD cursor location to top row
-	//LCD_text (text_top_row);
-	//LCD_cursor (0,1);										// set LCD cursor location to bottom row
-	//LCD_text (text_bottom_row);
-	//LCD_cursor_off ();									// turn off the LCD cursor
-
-	/* output text message in the middle of the VGA monitor */
-	VGA_box (0, 0, 319, 239, 0);						// clear the screen
-	//VGA_box (0, 0, 320, 240, 0x00FF);
-
-	VGA_text (30, 29, text_top_row);
-	VGA_text (30, 30, text_bottom_row);
-
-	/* read and echo audio data */
-	record = 0;
-	play = 0;
-
-	// PS/2 mouse needs to be reset (must be already plugged in)
-	*(PS2_ptr) = 0xFF;		// reset
-
-	int k = 0;
-	int j = 40;
-	int h = 181;
-	int data, i;
-	volatile int * JTAG_UART_ptr 	= (int *) JTAG_UART_BASE;
-
-	VGA_box (0, 0, 319, 0, 0x0F00);
-	VGA_box (0, 0, 0, 239, 0x0F00);
-	VGA_box (319, 0, 319, 239, 0x0F00);
-	VGA_box (0, 239, 319, 239, 0x0F00);
-
-	while(1)
-	{
+	 VGA_box(0,0,319,239,0x47FF);
+	 VGA_box(4,4,74,234,0);
+	 VGA_box(79,4,315,234,0x0000);
 
 
-		VGA_box (40, h, j, 181, 0x0F00);
 
-		j++;
-		if( j > 280){
-			j = 30;
-			VGA_box (40, 181, 280, 181, 0x0000);
+  }
+}
+/* Prints "Hello World" and sleeps for three seconds */
+void task2(void* pdata)
+{
+	volatile int * KEY_ptr = (int *) 0x10000050;
+	int KEY_value;
+	int l= 90;
+	int h = 10;
+	int beginL=90;
+	int beginH=10;
+	int state = 1;
+	int i;
+  while (1)
+  {
+
+	  	KEY_value = *(KEY_ptr + 3);			// read the pushbutton interrupt register
+	  	*(KEY_ptr + 3) = 0; 						// Clear the interrupt
+
+	  	if (KEY_value == 0x4)					// check KEY2
+	  	{
+			state--;
+	  	}
+	  	else if (KEY_value == 0x8)				// check KEY3
+	  	{
+			state++;
+	  	}
+
+	  	 if(state >=5){
+	  				state = 1;
+	  	} else if(state<=0){
+	  				state = 4;
+	  	} else if(state == 1){ //omlaag
+	  		for(i=0;i<=2;i++){
+	  			h++;
+				beginH=h;
+				beginL=l;
+				VGA_box(beginL,beginH,l,h,0x0F00);
+	  		}
+		} else if(state == 2){ //rechts
+			for(i=0;i<=2;i++){
+				l++;
+				beginH=h;
+				beginL=l;
+				VGA_box(beginL,beginH,l,h,0x0F00);
+			}
+		} else if(state == 3){ // omhoog
+			for(i=0;i<=2;i++){
+				h--;
+				beginH=h;
+				beginL=l;
+				VGA_box(beginL,beginH,l,h,0x0F00);
+			}
+		} else if(state == 4){ //links
+			for(i=0;i<=2;i++){
+				l--;
+				beginH=h;
+				beginL=l;
+				VGA_box(beginL,beginH,l,h,0x0F00);
+			}
 		}
 
-		for(k=0; k < 10000; k++){}
+    OSTimeDlyHMSM(0, 0, 0, 70);
+  }
+}
+/* The main function creates two task and starts multi-tasking */
+int main(void)
+{
+	//extern volatile int buffer_index;
+	ALT_SEM_CREATE(&reset, 1);
+  OSTaskCreateExt(Achtergrond,
+                  NULL,
+                  (void *)&_stk[TASK_STACKSIZE-1],
+                  _PRIORITY,
+                  _PRIORITY,
+                  _stk,
+                  TASK_STACKSIZE,
+                  NULL,
+                  0);
 
 
-		data = *(JTAG_UART_ptr);		 		// read the JTAG_UART data register
-				if (data & 0x00008000)					// check RVALID to see if there is new data
-				{
-					data = data & 0x000000FF;			// the data is in the least significant byte
-					/* echo the character */
-					printf("%c", (char)data);
-
-					char customString[2] = {(char)data, '\0'};
-					strcpy(text_bottom_row, customString);
-					if(data == 'd'){
-								h++;
-							}
-				}
-	}
+  OSTaskCreateExt(task2,NULL,(void *)&task2_stk[TASK_STACKSIZE-1],TASK2_PRIORITY,TASK2_PRIORITY,task2_stk,TASK_STACKSIZE,NULL,0);
+  OSStart();
+  return 0;
 }
 
 /****************************************************************************************
