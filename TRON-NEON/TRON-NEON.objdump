@@ -14467,7 +14467,7 @@ void check_KEYs(int * KEY1, int * KEY2, int * counter)
     cc3c:	d9400015 	stw	r5,0(sp)
     cc40:	d9800115 	stw	r6,4(sp)
     cc44:	d9c00215 	stw	r7,8(sp)
-    cc48:	00000000 	call	0 <__reset>
+    cc48:	00000000 	call	0 <__alt_mem_SDRAM>
     cc4c:	d9400017 	ldw	r5,0(sp)
     cc50:	d9800117 	ldw	r6,4(sp)
     cc54:	d9c00217 	ldw	r7,8(sp)
@@ -14553,7 +14553,7 @@ void check_KEYs(int * KEY1, int * KEY2, int * counter)
     cd8c:	10003426 	beq	r2,zero,ce60 <__call_exitprocs+0x18c>
     cd90:	9809883a 	mov	r4,r19
     cd94:	a8800015 	stw	r2,0(r21)
-    cd98:	00000000 	call	0 <__reset>
+    cd98:	00000000 	call	0 <__alt_mem_SDRAM>
     cd9c:	acc00017 	ldw	r19,0(r21)
     cda0:	983fe41e 	bne	r19,zero,cd34 <__alt_mem_Flash_flash_data+0xf400cd34>
     cda4:	dfc00b17 	ldw	ra,44(sp)
