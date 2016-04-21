@@ -42,20 +42,19 @@ void Achtergrond (void* pdata)
 	 VGA_box(0,0,319,239,0x47FF);
 	 VGA_box(4,4,74,234,0);
 	 VGA_box(79,4,315,234,0x0000);
+	 VGA_text(3,3,"                            \0");
 
 
 
   }
 }
-/* Prints "Hello World" and sleeps for three seconds */
+
 void task2(void* pdata)
 {
 	volatile int * KEY_ptr = (int *) 0x10000050;
 	int KEY_value;
 	int l= 90;
 	int h = 10;
-	int beginL=90;
-	int beginH=10;
 	int state = 1;
 	int i;
   while (1)
@@ -81,54 +80,32 @@ void task2(void* pdata)
 	  	}
 
 	  	if(state == 1){ //omlaag
-	  		for(i=0;i<=2;i++){
+	  		//for(i=0;i<=1;i++){
 	  			h++;
-				beginH=h;
-				beginL=l;
-				VGA_box(beginL,beginH,l,h,0x0F00);
-	  		}
+				VGA_box(l,h,l,h,0x0F00);
+	  		//}
 		} else if(state == 2){ //rechts
-			for(i=0;i<=2;i++){
+			//for(i=0;i<=1;i++){
 				l++;
-				beginH=h;
-				beginL=l;
-				VGA_box(beginL,beginH,l,h,0x0F00);
-			}
+				VGA_box(l,h,l,h,0x0F00);
+			//}
 		} else if(state == 3){ // omhoog
-			for(i=0;i<=2;i++){
+			//for(i=0;i<=1;i++){
 				h--;
-				beginH=h;
-				beginL=l;
-				VGA_box(beginL,beginH,l,h,0x0F00);
-			}
+				VGA_box(l,h,l,h,0x0F00);
+			//}
 		} else if(state == 4){ //links
-			for(i=0;i<=2;i++){
+			//for(i=0;i<=1;i++){
 				l--;
-				beginH=h;
-				beginL=l;
-				VGA_box(beginL,beginH,l,h,0x0F00);
-			}
+				VGA_box(l,h,l,h,0x0F00);
+			//}
 		}
 
 	  	// border hit detection
-	  	if(h>=234){
+	  	if(h>=234 || h<=4 || l>=315 || l<=79){
+	  		VGA_text(5 ,3,"GAME OVER \0");
 	  		OSTaskDel(OS_PRIO_SELF);
 	  	}
-	  	else if(h<=4){
-	  		OSTaskDel(OS_PRIO_SELF);
-	  	}
-	  	else if(l>=315){
-	  		OSTaskDel(OS_PRIO_SELF);
-	  	}
-
-	  	else if(l<=79){
-	  		OSTaskDel(OS_PRIO_SELF);
-	  	}
-
-
-
-
-
 
     OSTimeDlyHMSM(0, 0, 0, 70);
   }
@@ -139,20 +116,12 @@ int main(void)
 	LCD_cursor_off(); //clears lcd screen of cursor
 	//extern volatile int buffer_index;
 	ALT_SEM_CREATE(&reset, 1);
-  OSTaskCreateExt(Achtergrond,
-                  NULL,
-                  (void *)&_stk[TASK_STACKSIZE-1],
-                  _PRIORITY,
-                  _PRIORITY,
-                  _stk,
-                  TASK_STACKSIZE,
-                  NULL,
-                  0);
+	OSTaskCreateExt(Achtergrond,NULL,(void *)&_stk[TASK_STACKSIZE-1],_PRIORITY, _PRIORITY,_stk,TASK_STACKSIZE,NULL,0);
 
+	OSTaskCreateExt(task2,NULL,(void *)&task2_stk[TASK_STACKSIZE-1],TASK2_PRIORITY,TASK2_PRIORITY,task2_stk,TASK_STACKSIZE,NULL,0);
 
-  OSTaskCreateExt(task2,NULL,(void *)&task2_stk[TASK_STACKSIZE-1],TASK2_PRIORITY,TASK2_PRIORITY,task2_stk,TASK_STACKSIZE,NULL,0);
-  OSStart();
-  return 0;
+	OSStart();
+	return 0;
 }
 
 /****************************************************************************************
