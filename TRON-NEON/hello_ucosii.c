@@ -213,7 +213,7 @@ void task4(void* pdata)
 		}
 
 
-		OSTimeDlyHMSM(0, 0, 0, 500);
+		OSTimeDlyHMSM(0, 0, 0, 70);
 	}
 
 
