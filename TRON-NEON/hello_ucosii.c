@@ -41,11 +41,14 @@ ALT_SEM(reset) //for reset
 ALT_SEM(resetWaarde)
 ALT_SEM(pos)
 ALT_SEM(af)
+ALT_SEM(state)
 
 int h;
 int l;
 int spelerAf;
 int resetten;
+int statePlus;
+int stateMin;
 
 /* Prints "Hello World" and sleeps for three seconds */
 void Achtergrond (void* pdata)
@@ -81,22 +84,18 @@ void task2(void* pdata)
 	  	KEY_value = *(KEY_ptr + 3);			// read the pushbutton interrupt register
 	  	*(KEY_ptr + 3) = 0; 						// Clear the interrupt
 
-	  	if (KEY_value == 0x2)					// check KEY2
-		{
-	  		ALT_SEM_PEND(resetWaarde,0);
-			resetten = 1;
-			ALT_SEM_POST(resetWaarde);
-			ALT_SEM_POST(reset);
-		}
-	  	if (KEY_value == 0x4)					// check KEY2
+		ALT_SEM_PEND(state, 0);
+	  	if (stateMin)					// check KEY2
 	  	{
+			stateMin = 0;
 			state--;
 	  	}
-	  	else if (KEY_value == 0x8)				// check KEY3
+	  	else if (statePlus)				// check KEY3
 	  	{
+			statePlus = 0;
 			state++;
 	  	}
-
+		ALT_SEM_POST(state);
 	  	// state reset
 	  	 if(state >=5){
 	  				state = 1;
@@ -183,7 +182,43 @@ void task3(void* pdata)
 		OSTimeDlyHMSM(0, 0, 0, 500);
 	}
 }
+void task4(void* pdata) 
+{
+	volatile int * KEY_ptr = (int *)0x10000050;
+	int KEY_value;
 
+	while (1) {
+		KEY_value = *(KEY_ptr + 3);			// read the pushbutton interrupt register
+		*(KEY_ptr + 3) = 0; 						// Clear the interrupt
+
+
+		if (KEY_value == 0x2)					// check KEY1
+		{
+			ALT_SEM_PEND(resetWaarde, 0);
+			resetten = 1;
+			ALT_SEM_POST(resetWaarde);
+			ALT_SEM_POST(reset);
+		}
+		if (KEY_value == 0x4)					// check KEY2
+		{
+			ALT_SEM_PEND(state, 0);
+			stateMin = 1;
+			ALT_SEM_POST(state);
+		}
+		else if (KEY_value == 0x8)				// check KEY3
+		{
+			ALT_SEM_PEND(state, 0);
+			statePlus=1;
+			ALT_SEM_POST(state);
+		}
+
+
+		OSTimeDlyHMSM(0, 0, 0, 500);
+	}
+
+
+
+}
 
 
 /* The main function creates two task and starts multi-tasking */
@@ -196,13 +231,13 @@ int main(void)
 	ALT_SEM_CREATE(&pos, 1);
 	ALT_SEM_CREATE(&af, 1);
 	ALT_SEM_CREATE(&resetWaarde, 1);
-
+	ALT_SEM_CREATE(&state, 1);
 
 	OSTaskCreateExt(Achtergrond,NULL,(void *)&_stk[TASK_STACKSIZE-1],_PRIORITY, _PRIORITY,_stk,TASK_STACKSIZE,NULL,0);
 
 	OSTaskCreateExt(task2,NULL,(void *)&task2_stk[TASK_STACKSIZE-1],TASK2_PRIORITY,TASK2_PRIORITY,task2_stk,TASK_STACKSIZE,NULL,0);
 	OSTaskCreateExt(task3,NULL,(void *)&task3_stk[TASK_STACKSIZE-1],TASK3_PRIORITY,TASK3_PRIORITY,task3_stk,TASK_STACKSIZE,NULL,0);
-
+	OSTaskCreateExt(task4, NULL, (void *)&task4_stk[TASK_STACKSIZE - 1], TASK4_PRIORITY, TASK4_PRIORITY, task4_stk, TASK_STACKSIZE, NULL, 0);
 
 	OSStart();
 	return 0;
