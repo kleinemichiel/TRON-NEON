@@ -5,6 +5,10 @@
 /* Definition of Task Priorities */
 #define _PRIORITY      1
 #define TASK2_PRIORITY      2
+#define TASK3_PRIORITY      3
+#define TASK4_PRIORITY      15
+
+#define FLAG_1 0x01
 
 #include <stdio.h>
 #include "includes.h"
@@ -12,6 +16,8 @@
 #include "altera_up_avalon_parallel_port.h"
 #include "string.h"
 #include <os/alt_sem.h>
+#include <os/alt_flag.h>
+
 
 /* function prototypes */
 void LCD_cursor( int, int );
@@ -26,9 +32,21 @@ void check_KEYs( int *, int *, int * );
 #define   TASK_STACKSIZE       2048
 OS_STK    _stk[TASK_STACKSIZE];
 OS_STK    task2_stk[TASK_STACKSIZE];
+OS_STK    task3_stk[TASK_STACKSIZE];
+OS_STK    task4_stk[TASK_STACKSIZE];
+
 
 /*intitalizing semaphores */
 ALT_SEM(reset) //for reset
+ALT_SEM(resetWaarde)
+ALT_SEM(pos)
+ALT_SEM(af)
+ALT_SEM(stapje)
+
+int h;
+int l;
+int spelerAf;
+int resetten;
 
 /* Prints "Hello World" and sleeps for three seconds */
 void Achtergrond (void* pdata)
@@ -39,9 +57,10 @@ void Achtergrond (void* pdata)
   {
 	  ALT_SEM_PEND(reset, 0);// whenever the semaphore reset is posted, this will clear the screen and set default background.
 
-	 VGA_box(0,0,319,239,0x47FF);
-	 VGA_box(4,4,74,234,0);
-	 VGA_box(79,4,315,234,0x0000);
+	 //VGA_box(0,0,319,239,0x47FF);
+	 VGA_box(0,0,319,239,0xFD22);
+	 VGA_box(4,4,79,234,0);
+	 VGA_box(84,4,314,234,0x0000);
 	 VGA_text(3,3,"                            \0");
 
 
@@ -53,13 +72,13 @@ void task2(void* pdata)
 {
 	volatile int * KEY_ptr = (int *) 0x10000050;
 	int KEY_value;
-	int l= 90;
-	int h = 10;
+	ALT_SEM_PEND(pos, 0);
+	l= 100;
+	h = 14;
+	ALT_SEM_POST(pos);
 	int state = 1;
-	int i;
   while (1)
   {
-
 	  	KEY_value = *(KEY_ptr + 3);			// read the pushbutton interrupt register
 	  	*(KEY_ptr + 3) = 0; 						// Clear the interrupt
 
@@ -78,6 +97,8 @@ void task2(void* pdata)
 	  	} else if(state<=0){
 	  				state = 4;
 	  	}
+
+	  	ALT_SEM_PEND(pos, 0);
 
 	  	if(state == 1){ //omlaag
 	  		//for(i=0;i<=1;i++){
@@ -101,24 +122,104 @@ void task2(void* pdata)
 			//}
 		}
 
+	  	ALT_SEM_POST(pos);
+
 	  	// border hit detection
-	  	if(h>=234 || h<=4 || l>=315 || l<=79){
+	  	ALT_SEM_PEND(af,0);
+
+	  	if(spelerAf==1){
 	  		VGA_text(5 ,3,"GAME OVER \0");
 	  		OSTaskDel(OS_PRIO_SELF);
 	  	}
+	  	ALT_SEM_POST(af);
 
-    OSTimeDlyHMSM(0, 0, 0, 70);
+
+    OSTimeDlyHMSM(0, 0, 0, 500);
   }
 }
+
+void task3(void* pdata)
+{
+	int coords [230][230];
+
+	int coord1;
+	int coord2;
+
+
+	while (1)
+	{
+		ALT_SEM_PEND(resetWaarde,0);
+		if(resetten == 1){
+			for(coord1 = 0; coord1<230;coord1++ ){
+				for(coord2 = 0; coord2<230;coord2++ ){
+					coords[coord1][coord2]=0;
+				}
+			}
+		}
+		ALT_SEM_POST(resetWaarde);
+
+		ALT_SEM_PEND(pos, 0);
+
+		if(coords[h-84][l-4]==1){
+			ALT_SEM_PEND(af, 0);
+			spelerAf = 1;
+			ALT_SEM_POST(af);
+		} else if(h>=234 || h<=4 || l>=314 || l<=84){
+			ALT_SEM_PEND(af, 0);
+			spelerAf = 1;
+			ALT_SEM_POST(af);
+		} else{
+			coords[h-84][l-4]=1;
+		}
+
+		ALT_SEM_POST(pos);
+
+		OSTimeDlyHMSM(0, 0, 0, 500);
+	}
+}
+
+void task4(void* pdata)
+{
+
+	volatile int * KEY_ptr = (int *) 0x10000050;
+	int KEY_value;
+
+	while (1)
+	{
+		KEY_value = *(KEY_ptr + 3);			// read the pushbutton interrupt register
+		*(KEY_ptr + 3) = 0; 						// Clear the interrupt
+
+		if (KEY_value == 0x2)					// check KEY2
+		{
+			ALT_SEM_PEND(resetWaarde,0);
+			resetten = 1;
+			ALT_SEM_POST(resetWaarde);
+			ALT_SEM_POST(reset);
+
+		}
+
+		OSTimeDlyHMSM(0, 0, 0, 250);
+	}
+}
+
 /* The main function creates two task and starts multi-tasking */
 int main(void)
 {
+
 	LCD_cursor_off(); //clears lcd screen of cursor
 	//extern volatile int buffer_index;
 	ALT_SEM_CREATE(&reset, 1);
+	ALT_SEM_CREATE(&pos, 1);
+	ALT_SEM_CREATE(&af, 1);
+	ALT_SEM_CREATE(&stapje, 1);
+	ALT_SEM_CREATE(&resetWaarde, 1);
+
+
 	OSTaskCreateExt(Achtergrond,NULL,(void *)&_stk[TASK_STACKSIZE-1],_PRIORITY, _PRIORITY,_stk,TASK_STACKSIZE,NULL,0);
 
 	OSTaskCreateExt(task2,NULL,(void *)&task2_stk[TASK_STACKSIZE-1],TASK2_PRIORITY,TASK2_PRIORITY,task2_stk,TASK_STACKSIZE,NULL,0);
+	OSTaskCreateExt(task3,NULL,(void *)&task3_stk[TASK_STACKSIZE-1],TASK3_PRIORITY,TASK3_PRIORITY,task3_stk,TASK_STACKSIZE,NULL,0);
+	//OSTaskCreateExt(task4,NULL,(void *)&task4_stk[TASK_STACKSIZE-1],TASK4_PRIORITY,TASK4_PRIORITY,task4_stk,TASK_STACKSIZE,NULL,0);
 
 	OSStart();
 	return 0;
