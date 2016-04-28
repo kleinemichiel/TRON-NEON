@@ -4,9 +4,9 @@
 
 /* Definition of Task Priorities */
 #define _PRIORITY      1
-#define TASK2_PRIORITY      2
-#define TASK3_PRIORITY      3
-#define TASK4_PRIORITY      15
+#define TASK2_PRIORITY      7
+#define TASK3_PRIORITY      10
+#define TASK4_PRIORITY      4
 
 #define FLAG_1 0x01
 
@@ -20,13 +20,9 @@
 
 
 /* function prototypes */
-void LCD_cursor( int, int );
-void LCD_text( char * );
 void LCD_cursor_off( void );
 void VGA_text (int, int, char *);
 void VGA_box (int, int, int, int, short);
-void HEX_PS2(char, char, char);
-void check_KEYs( int *, int *, int * );
 
 /* Definition of Task stacksize */
 #define   TASK_STACKSIZE       2048
@@ -41,10 +37,10 @@ ALT_SEM(reset) //for reset
 ALT_SEM(resetWaarde)
 ALT_SEM(pos)
 ALT_SEM(af)
-ALT_SEM(state)
+ALT_SEM(states)
 
-int h;
-int l;
+int hoogte;
+int lengte;
 int spelerAf;
 int resetten;
 int statePlus;
@@ -75,8 +71,10 @@ void task2(void* pdata)
 	volatile int * KEY_ptr = (int *) 0x10000050;
 	int KEY_value;
 	ALT_SEM_PEND(pos, 0);
-	l= 100;
-	h = 14;
+	int l= 95;
+	int h = 15;
+
+	ALT_SEM_PEND(pos,0);
 	ALT_SEM_POST(pos);
 	int state = 1;
   while (1)
@@ -92,7 +90,7 @@ void task2(void* pdata)
 	  ALT_SEM_POST(af);
 
 
-		ALT_SEM_PEND(state, 0);
+		ALT_SEM_PEND(states, 0);
 	  	if (stateMin)					// check KEY2
 	  	{
 			stateMin = 0;
@@ -103,7 +101,7 @@ void task2(void* pdata)
 			statePlus = 0;
 			state++;
 	  	}
-		ALT_SEM_POST(state);
+		ALT_SEM_POST(states);
 	  	// state reset
 	  	 if(state >=5){
 	  				state = 1;
@@ -135,6 +133,8 @@ void task2(void* pdata)
 			//}
 		}
 
+	  	printf("h: %d l: %d \n", h, l);
+
 	  	ALT_SEM_POST(pos);
 
 	  
@@ -145,8 +145,11 @@ void task2(void* pdata)
 
 void task3(void* pdata)
 {
-	int coords [230][230];
-	int (*p)[230]= coords;
+	int coords [115][115];
+//	int coord1=230;
+//	int coord2=230;
+
+//	int (*p)[230]= coords;
 
 	int coord1;
 	int coord2;
@@ -155,26 +158,32 @@ void task3(void* pdata)
 	{
 		ALT_SEM_PEND(resetWaarde,0);
 		if(resetten == 1){
-			for(coord1 = 0; coord1<230;coord1++ ){
-				for (coord2 = 0; coord2<230;coord2++){
-					p[coord1][coord2] = 0;
+			VGA_text(3,5,"Bezig            \0");
+			//memset(coords,0, sizeof(coords[230][230]) *coord1 *coord2);
+			for(coord1=0;coord1<115;coord1++)
+			{
+				for(coord2=0;coord2<115;coord2++)
+				{
+					coords[coord1][coord2] = 0;
 				}
 			}
+			resetten = 0;
+			VGA_text(3,5,"Resetten                  \0");
 		}
 		ALT_SEM_POST(resetWaarde);
 
 		ALT_SEM_PEND(pos, 0);
 
-		if(coords[h-84][l-4]==1){
+		if(coords[(hoogte-84)][(lengte-4)]==1){
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
 			ALT_SEM_POST(af);
-		} else if(h>=234 || h<=4 || l>=314 || l<=84){
+		} else if(hoogte>=234 || hoogte<=4 || lengte>=314 || lengte<=84){
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
 			ALT_SEM_POST(af);
 		} else{
-			coords[h-84][l-4]=1;
+			coords[(hoogte-84)][(lengte-4)]=1;
 		}
 
 		ALT_SEM_POST(pos);
@@ -201,15 +210,15 @@ void task4(void* pdata)
 		}
 		if (KEY_value == 0x4)					// check KEY2
 		{
-			ALT_SEM_PEND(state, 0);
+			ALT_SEM_PEND(states, 0);
 			stateMin = 1;
-			ALT_SEM_POST(state);
+			ALT_SEM_POST(states);
 		}
 		else if (KEY_value == 0x8)				// check KEY3
 		{
-			ALT_SEM_PEND(state, 0);
+			ALT_SEM_PEND(states, 0);
 			statePlus=1;
-			ALT_SEM_POST(state);
+			ALT_SEM_POST(states);
 		}
 
 
@@ -231,7 +240,7 @@ int main(void)
 	ALT_SEM_CREATE(&pos, 1);
 	ALT_SEM_CREATE(&af, 1);
 	ALT_SEM_CREATE(&resetWaarde, 1);
-	ALT_SEM_CREATE(&state, 1);
+	ALT_SEM_CREATE(&states, 1);
 
 	OSTaskCreateExt(Achtergrond,NULL,(void *)&_stk[TASK_STACKSIZE-1],_PRIORITY, _PRIORITY,_stk,TASK_STACKSIZE,NULL,0);
 
