@@ -68,14 +68,9 @@ void Achtergrond (void* pdata)
 
 void task2(void* pdata)
 {
-	volatile int * KEY_ptr = (int *) 0x10000050;
-	int KEY_value;
-	ALT_SEM_PEND(pos, 0);
+
 	int l= 95;
 	int h = 15;
-
-	ALT_SEM_PEND(pos,0);
-	ALT_SEM_POST(pos);
 	int state = 1;
   while (1)
   {
@@ -88,7 +83,7 @@ void task2(void* pdata)
 		  //OSTaskDel(OS_PRIO_SELF);
 	  }
 	  ALT_SEM_POST(af);
-
+	  printf("h: %d l: %d \n", h, l);
 
 		ALT_SEM_PEND(states, 0);
 	  	if (stateMin)					// check KEY2
@@ -114,21 +109,25 @@ void task2(void* pdata)
 	  	if(state == 1){ //omlaag
 	  		//for(i=0;i<=1;i++){
 	  			h++;
+	  			hoogte = (h-84)/2;
 				VGA_box(l,h,l,h,0x0F00);
 	  		//}
 		} else if(state == 2){ //rechts
 			//for(i=0;i<=1;i++){
 				l++;
+				lengte = (l-4)/2;
 				VGA_box(l,h,l,h,0x0F00);
 			//}
 		} else if(state == 3){ // omhoog
 			//for(i=0;i<=1;i++){
 				h--;
+				hoogte = (h-84)/2;
 				VGA_box(l,h,l,h,0x0F00);
 			//}
 		} else if(state == 4){ //links
 			//for(i=0;i<=1;i++){
 				l--;
+				lengte = (l-4)/2;
 				VGA_box(l,h,l,h,0x0F00);
 			//}
 		}
@@ -174,16 +173,16 @@ void task3(void* pdata)
 
 		ALT_SEM_PEND(pos, 0);
 
-		if(coords[(hoogte-84)][(lengte-4)]==1){
+		if(coords[(hoogte)][(lengte)]==1){
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
 			ALT_SEM_POST(af);
-		} else if(hoogte>=234 || hoogte<=4 || lengte>=314 || lengte<=84){
+		} else if(hoogte>=115 || hoogte<=0 || lengte>=115 || lengte<=0){
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
 			ALT_SEM_POST(af);
 		} else{
-			coords[(hoogte-84)][(lengte-4)]=1;
+			coords[(hoogte)][(lengte)]=1;
 		}
 
 		ALT_SEM_POST(pos);
