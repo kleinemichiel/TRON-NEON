@@ -81,8 +81,16 @@ void task2(void* pdata)
 	int state = 1;
   while (1)
   {
-	  	KEY_value = *(KEY_ptr + 3);			// read the pushbutton interrupt register
-	  	*(KEY_ptr + 3) = 0; 						// Clear the interrupt
+
+	  // border hit detection
+	  ALT_SEM_PEND(af, 0);
+
+	  if (spelerAf == 1) {
+		  VGA_text(5, 3, "GAME OVER \0");
+		  //OSTaskDel(OS_PRIO_SELF);
+	  }
+	  ALT_SEM_POST(af);
+
 
 		ALT_SEM_PEND(state, 0);
 	  	if (stateMin)					// check KEY2
@@ -129,15 +137,7 @@ void task2(void* pdata)
 
 	  	ALT_SEM_POST(pos);
 
-	  	// border hit detection
-	  	ALT_SEM_PEND(af,0);
-
-	  	if(spelerAf==1){
-	  		VGA_text(5 ,3,"GAME OVER \0");
-	  		//OSTaskDel(OS_PRIO_SELF);
-	  	}
-	  	ALT_SEM_POST(af);
-
+	  
 
     OSTimeDlyHMSM(0, 0, 0, 500);
   }
