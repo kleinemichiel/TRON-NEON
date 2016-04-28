@@ -1,14 +1,10 @@
-/* globals */
 #define BUF_SIZE 500000			// about 10 seconds of buffer (@ 48K samples/sec)
 #define BUF_THRESHOLD 96		// 75% of 128 word buffer
 
-/* Definition of Task Priorities */
-#define _PRIORITY      1
-#define TASK2_PRIORITY      7
-#define TASK3_PRIORITY      10
-#define TASK4_PRIORITY      4
-
-#define FLAG_1 0x01
+#define ACHTERGROND_PRIORITY      11
+#define SPELER_PRIORITY      7
+#define GRID_PRIORITY      10
+#define INVOER_PRIORITY      4
 
 #include <stdio.h>
 #include "includes.h"
@@ -18,22 +14,16 @@
 #include <os/alt_sem.h>
 #include <os/alt_flag.h>
 
-
-/* function prototypes */
 void LCD_cursor_off( void );
 void VGA_text (int, int, char *);
 void VGA_box (int, int, int, int, short);
 
-/* Definition of Task stacksize */
 #define   TASK_STACKSIZE       2048
-OS_STK    _stk[TASK_STACKSIZE];
-OS_STK    task2_stk[TASK_STACKSIZE];
-OS_STK    task3_stk[TASK_STACKSIZE];
-OS_STK    task4_stk[TASK_STACKSIZE];
+OS_STK    achtergrond_stk[TASK_STACKSIZE];
+OS_STK    speler_stk[TASK_STACKSIZE];
+OS_STK    grid_stk[TASK_STACKSIZE];
+OS_STK    invoer_stk[TASK_STACKSIZE];
 
-
-/*intitalizing semaphores */
-ALT_SEM(reset) //for reset
 ALT_SEM(resetWaarde)
 ALT_SEM(pos)
 ALT_SEM(af)
@@ -46,119 +36,114 @@ int resetten;
 int statePlus;
 int stateMin;
 
-/* Prints "Hello World" and sleeps for three seconds */
 void Achtergrond (void* pdata)
 {
-  VGA_box(0,0,319,239,0x00F0); //clear screen
+  VGA_box(0,0,319,239,0x00F0); 		//clear screen
 
   while (1)
   {
-	  ALT_SEM_PEND(reset, 0);// whenever the semaphore reset is posted, this will clear the screen and set default background.
+	VGA_box(0,0,319,239,0x47FF);
+	//VGA_box(0,0,319,239,0xFD22);
+	VGA_box(4,4,79,234,0);
+	VGA_box(84,4,314,234,0x0000);
+	VGA_text(3,3,"                            \0");
+	VGA_text(3,5,"                            \0");
 
-	 VGA_box(0,0,319,239,0x47FF);
-	 //VGA_box(0,0,319,239,0xFD22);
-	 VGA_box(4,4,79,234,0);
-	 VGA_box(84,4,314,234,0x0000);
-	 VGA_text(3,3,"                            \0");
-
-
+	OSTaskDel(OS_PRIO_SELF);
 
   }
 }
 
-void task2(void* pdata)
+void speler(void* pdata)
 {
 
 	int l= 95;
 	int h = 15;
 	int state = 1;
-  while (1)
-  {
 
-	  // border hit detection
-	  ALT_SEM_PEND(af, 0);
+	while (1)
+	{
 
-	  if (spelerAf == 1) {
-		  VGA_text(5, 3, "GAME OVER \0");
-		  //OSTaskDel(OS_PRIO_SELF);
-	  }
-	  ALT_SEM_POST(af);
-	  printf("h: %d l: %d \n", h, l);
+		// border hit detection
+		ALT_SEM_PEND(af, 0);
+
+		if (spelerAf == 1)
+		{
+			VGA_text(5, 3, "GAME OVER \0");
+			//OSTaskDel(OS_PRIO_SELF);
+		}
+
+		ALT_SEM_POST(af);
 
 		ALT_SEM_PEND(states, 0);
-	  	if (stateMin)					// check KEY2
+	  	if (stateMin)
 	  	{
 			stateMin = 0;
 			state--;
 	  	}
-	  	else if (statePlus)				// check KEY3
+	  	else if (statePlus)
 	  	{
 			statePlus = 0;
 			state++;
 	  	}
 		ALT_SEM_POST(states);
-	  	// state reset
-	  	 if(state >=5){
-	  				state = 1;
-	  	} else if(state<=0){
-	  				state = 4;
+
+		// state reset
+	  	if(state >=5)
+		{
+			state = 1;
+	  	} else if(state<=0)
+		{
+			state = 4;
 	  	}
 
-	  	ALT_SEM_PEND(pos, 0);
+		//Veranderen locatie
 
-	  	if(state == 1){ //omlaag
-	  		//for(i=0;i<=1;i++){
-	  			h++;
-	  			hoogte = (h-84)/2;
-				VGA_box(l,h,l,h,0x0F00);
-	  		//}
-		} else if(state == 2){ //rechts
-			//for(i=0;i<=1;i++){
-				l++;
-				lengte = (l-4)/2;
-				VGA_box(l,h,l,h,0x0F00);
-			//}
-		} else if(state == 3){ // omhoog
-			//for(i=0;i<=1;i++){
-				h--;
-				hoogte = (h-84)/2;
-				VGA_box(l,h,l,h,0x0F00);
-			//}
-		} else if(state == 4){ //links
-			//for(i=0;i<=1;i++){
-				l--;
-				lengte = (l-4)/2;
-				VGA_box(l,h,l,h,0x0F00);
-			//}
+		if(state == 1)		//omlaag
+		{
+			h++;
+		} else if(state == 2)		//rechts
+		{
+			l++;
+		} else if(state == 3)		// omhoog
+		{
+			h--;
+		} else if(state == 4)		//links
+		{
+			l--;
 		}
 
-	  	printf("h: %d l: %d \n", h, l);
+		//tekenen locatie
+		VGA_box(l,h,l,h,0x0F00);
 
-	  	ALT_SEM_POST(pos);
 
-	  
+		//opslaan in grid
+		ALT_SEM_PEND(pos, 0);
 
-    OSTimeDlyHMSM(0, 0, 0, 500);
-  }
+		lengte = (l-4)/2;
+		hoogte = (h-84)/2;
+
+		ALT_SEM_POST(pos);
+
+		//vertraging om andere tasks tijd te geven
+		OSTimeDlyHMSM(0, 0, 0, 500);
+	}
 }
 
-void task3(void* pdata)
+void grid(void* pdata)
 {
 	int coords [115][115];
-//	int coord1=230;
-//	int coord2=230;
-
-//	int (*p)[230]= coords;
-
 	int coord1;
 	int coord2;
 
 	while (1)
 	{
+		//array leeghalen
 		ALT_SEM_PEND(resetWaarde,0);
-		if(resetten == 1){
+
+		if(resetten == 1)
+		{
 			VGA_text(3,5,"Bezig            \0");
-			//memset(coords,0, sizeof(coords[230][230]) *coord1 *coord2);
 			for(coord1=0;coord1<115;coord1++)
 			{
 				for(coord2=0;coord2<115;coord2++)
@@ -169,28 +154,35 @@ void task3(void* pdata)
 			resetten = 0;
 			VGA_text(3,5,"Resetten                  \0");
 		}
+
 		ALT_SEM_POST(resetWaarde);
 
+		//opslaan locaties in array
 		ALT_SEM_PEND(pos, 0);
 
-		if(coords[(hoogte)][(lengte)]==1){
+		if(coords[(hoogte)][(lengte)]==1)
+		{
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
 			ALT_SEM_POST(af);
-		} else if(hoogte>=115 || hoogte<=0 || lengte>=115 || lengte<=0){
+		} else if(hoogte>=115 || hoogte<=0 || lengte>=115 || lengte<=0)
+		{
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
 			ALT_SEM_POST(af);
-		} else{
+		} else
+		{
 			coords[(hoogte)][(lengte)]=1;
 		}
 
 		ALT_SEM_POST(pos);
 
+		//vertraging om andere tasks tijd te geven
 		OSTimeDlyHMSM(0, 0, 0, 500);
 	}
 }
-void task4(void* pdata) 
+
+void invoer(void* pdata)
 {
 	volatile int * KEY_ptr = (int *)0x10000050;
 	int KEY_value;
@@ -203,54 +195,53 @@ void task4(void* pdata)
 		if (KEY_value == 0x2)					// check KEY1
 		{
 			ALT_SEM_PEND(resetWaarde, 0);
-			resetten = 1;
+			resetten = 1;		//ga resetten
 			ALT_SEM_POST(resetWaarde);
-			ALT_SEM_POST(reset);
+
+			//task om scherm te resetten
+			OSTaskCreateExt(Achtergrond,NULL,(void *)&achtergrond_stk[TASK_STACKSIZE-1],ACHTERGROND_PRIORITY, ACHTERGROND_PRIORITY,achtergrond_stk,TASK_STACKSIZE,NULL,0);
 		}
 		if (KEY_value == 0x4)					// check KEY2
 		{
 			ALT_SEM_PEND(states, 0);
-			stateMin = 1;
+			stateMin = 1;		//state naar links
 			ALT_SEM_POST(states);
 		}
 		else if (KEY_value == 0x8)				// check KEY3
 		{
 			ALT_SEM_PEND(states, 0);
-			statePlus=1;
+			statePlus=1;		//state naar rechts
 			ALT_SEM_POST(states);
 		}
 
-
 		OSTimeDlyHMSM(0, 0, 0, 70);
 	}
-
-
-
 }
 
 
-/* The main function creates two task and starts multi-tasking */
 int main(void)
 {
 
-	LCD_cursor_off(); //clears lcd screen of cursor
-	//extern volatile int buffer_index;
-	ALT_SEM_CREATE(&reset, 1);
+	LCD_cursor_off();
+
 	ALT_SEM_CREATE(&pos, 1);
 	ALT_SEM_CREATE(&af, 1);
-	ALT_SEM_CREATE(&resetWaarde, 1);
 	ALT_SEM_CREATE(&states, 1);
+	ALT_SEM_CREATE(&resetWaarde, 1);
 
-	OSTaskCreateExt(Achtergrond,NULL,(void *)&_stk[TASK_STACKSIZE-1],_PRIORITY, _PRIORITY,_stk,TASK_STACKSIZE,NULL,0);
-
-	OSTaskCreateExt(task2,NULL,(void *)&task2_stk[TASK_STACKSIZE-1],TASK2_PRIORITY,TASK2_PRIORITY,task2_stk,TASK_STACKSIZE,NULL,0);
-	OSTaskCreateExt(task3,NULL,(void *)&task3_stk[TASK_STACKSIZE-1],TASK3_PRIORITY,TASK3_PRIORITY,task3_stk,TASK_STACKSIZE,NULL,0);
-	OSTaskCreateExt(task4, NULL, (void *)&task4_stk[TASK_STACKSIZE - 1], TASK4_PRIORITY, TASK4_PRIORITY, task4_stk, TASK_STACKSIZE, NULL, 0);
+	OSTaskCreateExt(Achtergrond,NULL,(void *)&achtergrond_stk[TASK_STACKSIZE-1],ACHTERGROND_PRIORITY, ACHTERGROND_PRIORITY,achtergrond_stk,TASK_STACKSIZE,NULL,0);
+	OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
+	OSTaskCreateExt(grid,NULL,(void *)&grid_stk[TASK_STACKSIZE-1],GRID_PRIORITY,GRID_PRIORITY,grid_stk,TASK_STACKSIZE,NULL,0);
+	OSTaskCreateExt(invoer, NULL, (void *)&invoer_stk[TASK_STACKSIZE - 1], INVOER_PRIORITY, INVOER_PRIORITY, invoer_stk, TASK_STACKSIZE, NULL, 0);
 
 	OSStart();
 	return 0;
 }
 
+//Vga controller hieronder
+//		|
+//		|
+//	   \|/
 
 /****************************************************************************************
  * Subroutine to turn off the LCD cursor
@@ -299,4 +290,6 @@ void VGA_box(int x1, int y1, int x2, int y2, short pixel_color)
 		}
 	}
 }
+
+
 
