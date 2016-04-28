@@ -1,9 +1,9 @@
 #define BUF_SIZE 500000			// about 10 seconds of buffer (@ 48K samples/sec)
 #define BUF_THRESHOLD 96		// 75% of 128 word buffer
 
-#define ACHTERGROND_PRIORITY      11
+#define ACHTERGROND_PRIORITY      3
 #define SPELER_PRIORITY      7
-#define GRID_PRIORITY      10
+#define GRID_PRIORITY      6
 #define INVOER_PRIORITY      4
 
 #include <stdio.h>
@@ -19,31 +19,41 @@ void VGA_text (int, int, char *);
 void VGA_box (int, int, int, int, short);
 
 #define   TASK_STACKSIZE       2048
+#define	  GRIDTASK_STACKSIZE	131072
 OS_STK    achtergrond_stk[TASK_STACKSIZE];
 OS_STK    speler_stk[TASK_STACKSIZE];
-OS_STK    grid_stk[TASK_STACKSIZE];
+OS_STK    grid_stk[GRIDTASK_STACKSIZE];
 OS_STK    invoer_stk[TASK_STACKSIZE];
 
 ALT_SEM(resetWaarde)
 ALT_SEM(pos)
 ALT_SEM(af)
 ALT_SEM(states)
+ALT_SEM(bezig)
 
 int hoogte;
 int lengte;
 int spelerAf;
-int resetten;
+int resetten = 0;
 int statePlus;
 int stateMin;
 
+int coords [115][115];
+int coords1;
+int coords2;
+
 void Achtergrond (void* pdata)
 {
-	VGA_box(0,0,319,239,0x00F0); 		//clear screen
+	//blauwe randjes
+	VGA_box(0,0,3,239,0x47FF);
+	VGA_box(0,0,319,3,0x47FF);
+	VGA_box(80,0,83,239,0x47FF);
+	VGA_box(0,236,319,239,0x47FF);
+	VGA_box(316,0,319,239,0x47FF);
 
-	VGA_box(0,0,319,239,0x47FF);
-	//VGA_box(0,0,319,239,0xFD22);
-	VGA_box(4,4,79,234,0);
-	VGA_box(84,4,314,234,0x0000);
+	//zwarte vlakken
+	VGA_box(4,4,79,235,0);
+	VGA_box(84,4,315,235,0);
 	VGA_text(3,3,"                            \0");
 	VGA_text(3,5,"                            \0");
 
@@ -58,8 +68,8 @@ void speler(void* pdata)
 	int h = 15;
 	int state = 1;
 	int i;
-	lengte = 10;
-	hoogte = 10;
+	lengte = 5;
+	hoogte = 5;
 
 	while (1)
 	{
@@ -100,11 +110,12 @@ void speler(void* pdata)
 
 		if(state == 1)		//omlaag
 		{
-			for(i = 0; i < 1; i++)
+			for(i = 0; i < 2; i++)
 			{
 				h++;
 				//tekenen locatie
 				VGA_box(l,h,l,h,0x0F00);
+				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
 			ALT_SEM_PEND(pos, 0);
@@ -114,11 +125,12 @@ void speler(void* pdata)
 			ALT_SEM_POST(pos);
 		} else if(state == 2)		//rechts
 		{
-			for(i = 0; i < 1; i++)
+			for(i = 0; i < 2; i++)
 			{
 				l++;
 				//tekenen locatie
 				VGA_box(l,h,l,h,0x0F00);
+				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
 			ALT_SEM_PEND(pos, 0);
@@ -128,11 +140,12 @@ void speler(void* pdata)
 			ALT_SEM_POST(pos);
 		} else if(state == 3)		// omhoog
 		{
-			for(i = 0; i < 1; i++)
+			for(i = 0; i < 2; i++)
 			{
 				h--;
 				//tekenen locatie
 				VGA_box(l,h,l,h,0x0F00);
+				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
 			ALT_SEM_PEND(pos, 0);
@@ -142,11 +155,12 @@ void speler(void* pdata)
 			ALT_SEM_POST(pos);
 		} else if(state == 4)		//links
 		{
-			for(i = 0; i < 1; i++)
+			for(i = 0; i < 2; i++)
 			{
 				l--;
 				//tekenen locatie
 				VGA_box(l,h,l,h,0x0F00);
+				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
 			ALT_SEM_PEND(pos, 0);
@@ -156,14 +170,7 @@ void speler(void* pdata)
 			ALT_SEM_POST(pos);
 		}
 
-
-		//opslaan in grid
-		ALT_SEM_PEND(pos, 0);
-
-		lengte = (l-4)/2;
-		hoogte = (h-84)/2;
-
-		ALT_SEM_POST(pos);
+		//printf("%d & %d \n", hoogte, lengte);
 
 		//vertraging om andere tasks tijd te geven
 		OSTimeDlyHMSM(0, 0, 0, 500);
@@ -172,39 +179,22 @@ void speler(void* pdata)
 
 void grid(void* pdata)
 {
-	int coords [115][115];
-	int coord1;
-	int coord2;
-
 	while (1)
 	{
-		//array leeghalen
-		ALT_SEM_PEND(resetWaarde,0);
-//		if(resetten == 1)
-//		{
-//			VGA_text(3,5,"Bezig            \0");
-//			for(coord1=0;coord1<115;coord1++)
-//			{
-//				for(coord2=0;coord2<115;coord2++)
-//				{
-//					coords[coord1][coord2] = 0;
-//				}
-//			}
-//			resetten = 0;
-//			VGA_text(3,5,"Resetten                  \0");
-//		}
-
-		ALT_SEM_POST(resetWaarde);
-
 		//opslaan locaties in array
 		ALT_SEM_PEND(pos, 0);
 
-		if(coords[hoogte][lengte]==1)
+		if(hoogte >=115 || hoogte <=0)
 		{
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
 			ALT_SEM_POST(af);
-		} else if(hoogte>=115 || hoogte<=0 || lengte>=115 || lengte<=0)
+		} else if (lengte  >=115 || lengte <=0)
+		{
+			ALT_SEM_PEND(af, 0);
+			spelerAf = 1;
+			ALT_SEM_POST(af);
+		} else if (coords[hoogte][lengte]==1)
 		{
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
@@ -217,7 +207,7 @@ void grid(void* pdata)
 		ALT_SEM_POST(pos);
 
 		//vertraging om andere tasks tijd te geven
-		OSTimeDlyHMSM(0, 0, 0, 500);
+		OSTimeDlyHMSM(0, 0, 1, 0);
 	}
 }
 
@@ -267,10 +257,20 @@ int main(void)
 	ALT_SEM_CREATE(&af, 1);
 	ALT_SEM_CREATE(&states, 1);
 	ALT_SEM_CREATE(&resetWaarde, 1);
+	ALT_SEM_CREATE(&bezig, 1);
+
+	for(coords1 =0; coords1 < 116; coords1++)
+	{
+		for(coords2 =0; coords2 < 116; coords2++)
+		{
+			coords[coords1][coords2] = 0;
+			printf("%d & %d = %d \n",coords1, coords2, coords[coords1][coords2]);
+		}
+	}
 
 	OSTaskCreateExt(Achtergrond,NULL,(void *)&achtergrond_stk[TASK_STACKSIZE-1],ACHTERGROND_PRIORITY, ACHTERGROND_PRIORITY,achtergrond_stk,TASK_STACKSIZE,NULL,0);
 	OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
-	OSTaskCreateExt(grid,NULL,(void *)&grid_stk[TASK_STACKSIZE-1],GRID_PRIORITY,GRID_PRIORITY,grid_stk,TASK_STACKSIZE,NULL,0);
+	OSTaskCreateExt(grid,NULL,(void *)&grid_stk[GRIDTASK_STACKSIZE-1],GRID_PRIORITY,GRID_PRIORITY,grid_stk,GRIDTASK_STACKSIZE,NULL,0);
 	OSTaskCreateExt(invoer, NULL, (void *)&invoer_stk[TASK_STACKSIZE - 1], INVOER_PRIORITY, INVOER_PRIORITY, invoer_stk, TASK_STACKSIZE, NULL, 0);
 
 	OSStart();
