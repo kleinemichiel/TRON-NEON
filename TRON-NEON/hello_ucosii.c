@@ -38,10 +38,8 @@ int stateMin;
 
 void Achtergrond (void* pdata)
 {
-  VGA_box(0,0,319,239,0x00F0); 		//clear screen
+	VGA_box(0,0,319,239,0x00F0); 		//clear screen
 
-  while (1)
-  {
 	VGA_box(0,0,319,239,0x47FF);
 	//VGA_box(0,0,319,239,0xFD22);
 	VGA_box(4,4,79,234,0);
@@ -51,7 +49,6 @@ void Achtergrond (void* pdata)
 
 	OSTaskDel(OS_PRIO_SELF);
 
-  }
 }
 
 void speler(void* pdata)
@@ -60,10 +57,12 @@ void speler(void* pdata)
 	int l= 95;
 	int h = 15;
 	int state = 1;
+	int i;
+	lengte = 10;
+	hoogte = 10;
 
 	while (1)
 	{
-
 		// border hit detection
 		ALT_SEM_PEND(af, 0);
 
@@ -101,20 +100,61 @@ void speler(void* pdata)
 
 		if(state == 1)		//omlaag
 		{
-			h++;
+			for(i = 0; i < 1; i++)
+			{
+				h++;
+				//tekenen locatie
+				VGA_box(l,h,l,h,0x0F00);
+			}
+			//opslaan in grid
+			ALT_SEM_PEND(pos, 0);
+
+			hoogte++;
+
+			ALT_SEM_POST(pos);
 		} else if(state == 2)		//rechts
 		{
-			l++;
+			for(i = 0; i < 1; i++)
+			{
+				l++;
+				//tekenen locatie
+				VGA_box(l,h,l,h,0x0F00);
+			}
+			//opslaan in grid
+			ALT_SEM_PEND(pos, 0);
+
+			lengte++;
+
+			ALT_SEM_POST(pos);
 		} else if(state == 3)		// omhoog
 		{
-			h--;
+			for(i = 0; i < 1; i++)
+			{
+				h--;
+				//tekenen locatie
+				VGA_box(l,h,l,h,0x0F00);
+			}
+			//opslaan in grid
+			ALT_SEM_PEND(pos, 0);
+
+			hoogte--;
+
+			ALT_SEM_POST(pos);
 		} else if(state == 4)		//links
 		{
-			l--;
-		}
+			for(i = 0; i < 1; i++)
+			{
+				l--;
+				//tekenen locatie
+				VGA_box(l,h,l,h,0x0F00);
+			}
+			//opslaan in grid
+			ALT_SEM_PEND(pos, 0);
 
-		//tekenen locatie
-		VGA_box(l,h,l,h,0x0F00);
+			lengte--;
+
+			ALT_SEM_POST(pos);
+		}
 
 
 		//opslaan in grid
@@ -140,27 +180,26 @@ void grid(void* pdata)
 	{
 		//array leeghalen
 		ALT_SEM_PEND(resetWaarde,0);
-
-		if(resetten == 1)
-		{
-			VGA_text(3,5,"Bezig            \0");
-			for(coord1=0;coord1<115;coord1++)
-			{
-				for(coord2=0;coord2<115;coord2++)
-				{
-					coords[coord1][coord2] = 0;
-				}
-			}
-			resetten = 0;
-			VGA_text(3,5,"Resetten                  \0");
-		}
+//		if(resetten == 1)
+//		{
+//			VGA_text(3,5,"Bezig            \0");
+//			for(coord1=0;coord1<115;coord1++)
+//			{
+//				for(coord2=0;coord2<115;coord2++)
+//				{
+//					coords[coord1][coord2] = 0;
+//				}
+//			}
+//			resetten = 0;
+//			VGA_text(3,5,"Resetten                  \0");
+//		}
 
 		ALT_SEM_POST(resetWaarde);
 
 		//opslaan locaties in array
 		ALT_SEM_PEND(pos, 0);
 
-		if(coords[(hoogte)][(lengte)]==1)
+		if(coords[hoogte][lengte]==1)
 		{
 			ALT_SEM_PEND(af, 0);
 			spelerAf = 1;
@@ -172,7 +211,7 @@ void grid(void* pdata)
 			ALT_SEM_POST(af);
 		} else
 		{
-			coords[(hoogte)][(lengte)]=1;
+			coords[hoogte][lengte]=1;
 		}
 
 		ALT_SEM_POST(pos);
