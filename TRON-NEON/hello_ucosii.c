@@ -44,24 +44,7 @@ int coords [115][115];
 int coords1;
 int coords2;
 
-void Achtergrond (void* pdata)
-{
-	//blauwe randjes
-	VGA_box(0,0,3,239,0x47FF);
-	VGA_box(0,0,319,3,0x47FF);
-	VGA_box(80,0,83,239,0x47FF);
-	VGA_box(0,236,319,239,0x47FF);
-	VGA_box(316,0,319,239,0x47FF);
 
-	//zwarte vlakken
-	VGA_box(4,4,79,235,0);
-	VGA_box(84,4,315,235,0);
-	VGA_text(3,3,"                            \0");
-	VGA_text(3,5,"                            \0");
-
-	OSTaskDel(OS_PRIO_SELF);
-
-}
 
 void speler(void* pdata)
 {
@@ -81,11 +64,23 @@ void speler(void* pdata)
 
 		if (spelerAf == 1)
 		{
-			l=95;
-			h=15;
-			lengte=5;
-			hoogte=5;
+
 			VGA_text(5, 3, "GAME OVER \0");
+			ALT_SEM_PEND(resetWaarde,0);
+
+			if(resetten==1){
+
+				l=95;
+				h=15;
+				lengte=5;
+				hoogte=5;
+				Array_Reset();
+				OSTimeDlyHMSM(0, 0, 2, 0);
+				resetten=0;
+				spelerAf=0;
+				state =1;
+			}
+			ALT_SEM_POST(resetWaarde);
 			ALT_SEM_POST(af);
 		}
 		else{
@@ -273,7 +268,7 @@ int main(void)
 
 	Array_Reset();
 
-	OSTaskCreateExt(Achtergrond,NULL,(void *)&achtergrond_stk[TASK_STACKSIZE-1],ACHTERGROND_PRIORITY, ACHTERGROND_PRIORITY,achtergrond_stk,TASK_STACKSIZE,NULL,0);
+
 	OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
 	OSTaskCreateExt(grid,NULL,(void *)&grid_stk[GRIDTASK_STACKSIZE-1],GRID_PRIORITY,GRID_PRIORITY,grid_stk,GRIDTASK_STACKSIZE,NULL,0);
 	OSTaskCreateExt(invoer, NULL, (void *)&invoer_stk[TASK_STACKSIZE - 1], INVOER_PRIORITY, INVOER_PRIORITY, invoer_stk, TASK_STACKSIZE, NULL, 0);
@@ -345,21 +340,34 @@ void Array_Reset(void){
 	int coord1;
 	int coord2;
 
+	VGA_text(5, 3, "RESETTING \0");
 	for(coord1=0;coord1<115;coord1++)
-				{
+				{	printf("Data Cleared %d    %d \n",coord1,coords[coord1][5]);
 					for(coord2=0;coord2<115;coord2++)
 					{
 						coords[coord1][coord2] = 0;
 						//printf("Data:%d 1:%d 2:%d\n",coords[coord1][coord2],coord1,coord2);
 					}
+					printf("Data Cleared %d    %d \n",coord1,coords[coord1][5]);
 				}
-
+	printf("Data Cleared");
 	 VGA_text(5, 3, "          \0");
-	 VGA_box(0,0,319,239,0x47FF);
+//	 VGA_box(0,0,319,239,0x47FF);
+//
+//	 	 VGA_box(5,5,80,235,0);
+//	 	 VGA_box(85,5,315,235,0x0000);
 
-	 	 VGA_box(4,4,79,234,0);
-	 	 VGA_box(84,4,314,234,0x0000);
+	 	//blauwe randjes
+	 		VGA_box(0,0,3,239,0x47FF);
+	 		VGA_box(0,0,319,3,0x47FF);
+	 		VGA_box(80,0,83,239,0x47FF);
+	 		VGA_box(0,236,319,239,0x47FF);
+	 		VGA_box(316,0,319,239,0x47FF);
+
+	 		//zwarte vlakken
+	 		VGA_box(5,5,79,235,0);
+	 			 	 VGA_box(85,5,315,235,0x0000);
 	 	 VGA_text(3,3,"                            \0");
 
-	 	OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
+	 	//OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
 }
