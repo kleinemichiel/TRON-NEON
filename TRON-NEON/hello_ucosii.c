@@ -1,9 +1,9 @@
 #define BUF_SIZE 500000			// about 10 seconds of buffer (@ 48K samples/sec)
 #define BUF_THRESHOLD 96		// 75% of 128 word buffer
 
-#define ACHTERGROND_PRIORITY      3
-#define SPELER_PRIORITY      7
-#define GRID_PRIORITY      6
+#define ACHTERGROND_PRIORITY      7
+#define SPELER_PRIORITY      3
+#define GRID_PRIORITY      2
 #define INVOER_PRIORITY      4
 
 #include <stdio.h>
@@ -17,6 +17,7 @@
 void LCD_cursor_off( void );
 void VGA_text (int, int, char *);
 void VGA_box (int, int, int, int, short);
+void Array_Reset( void );
 
 #define   TASK_STACKSIZE       2048
 #define	  GRIDTASK_STACKSIZE	131072
@@ -30,6 +31,7 @@ ALT_SEM(pos)
 ALT_SEM(af)
 ALT_SEM(states)
 ALT_SEM(bezig)
+ALT_SEM(spelerKlaar)
 
 int hoogte;
 int lengte;
@@ -74,16 +76,20 @@ void speler(void* pdata)
 	while (1)
 	{
 		// border hit detection
+		ALT_SEM_PEND(bezig,0);
 		ALT_SEM_PEND(af, 0);
 
 		if (spelerAf == 1)
 		{
+			l=95;
+			h=15;
+			lengte=5;
+			hoogte=5;
 			VGA_text(5, 3, "GAME OVER \0");
-			//OSTaskDel(OS_PRIO_SELF);
+			ALT_SEM_POST(af);
 		}
-
+		else{
 		ALT_SEM_POST(af);
-
 		ALT_SEM_PEND(states, 0);
 	  	if (stateMin)
 	  	{
@@ -169,10 +175,12 @@ void speler(void* pdata)
 
 			ALT_SEM_POST(pos);
 		}
+		}
 
 		//printf("%d & %d \n", hoogte, lengte);
 
 		//vertraging om andere tasks tijd te geven
+		ALT_SEM_POST(spelerKlaar);
 		OSTimeDlyHMSM(0, 0, 0, 500);
 	}
 }
@@ -181,6 +189,7 @@ void grid(void* pdata)
 {
 	while (1)
 	{
+		ALT_SEM_PEND(spelerKlaar,0);
 		//opslaan locaties in array
 		ALT_SEM_PEND(pos, 0);
 
@@ -206,6 +215,8 @@ void grid(void* pdata)
 
 		ALT_SEM_POST(pos);
 
+
+		ALT_SEM_POST(bezig);
 		//vertraging om andere tasks tijd te geven
 		OSTimeDlyHMSM(0, 0, 1, 0);
 	}
@@ -227,8 +238,7 @@ void invoer(void* pdata)
 			resetten = 1;		//ga resetten
 			ALT_SEM_POST(resetWaarde);
 
-			//task om scherm te resetten
-			OSTaskCreateExt(Achtergrond,NULL,(void *)&achtergrond_stk[TASK_STACKSIZE-1],ACHTERGROND_PRIORITY, ACHTERGROND_PRIORITY,achtergrond_stk,TASK_STACKSIZE,NULL,0);
+
 		}
 		if (KEY_value == 0x4)					// check KEY2
 		{
@@ -258,15 +268,10 @@ int main(void)
 	ALT_SEM_CREATE(&states, 1);
 	ALT_SEM_CREATE(&resetWaarde, 1);
 	ALT_SEM_CREATE(&bezig, 1);
+	ALT_SEM_CREATE(&spelerKlaar, 0);
 
-	for(coords1 =0; coords1 < 116; coords1++)
-	{
-		for(coords2 =0; coords2 < 116; coords2++)
-		{
-			coords[coords1][coords2] = 0;
-			printf("%d & %d = %d \n",coords1, coords2, coords[coords1][coords2]);
-		}
-	}
+
+	Array_Reset();
 
 	OSTaskCreateExt(Achtergrond,NULL,(void *)&achtergrond_stk[TASK_STACKSIZE-1],ACHTERGROND_PRIORITY, ACHTERGROND_PRIORITY,achtergrond_stk,TASK_STACKSIZE,NULL,0);
 	OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
@@ -332,3 +337,29 @@ void VGA_box(int x1, int y1, int x2, int y2, short pixel_color)
 
 
 
+
+/****************************************************************************************
+ * Reset the array
+ ****************************************************************************************/
+void Array_Reset(void){
+	int coord1;
+	int coord2;
+
+	for(coord1=0;coord1<115;coord1++)
+				{
+					for(coord2=0;coord2<115;coord2++)
+					{
+						coords[coord1][coord2] = 0;
+						//printf("Data:%d 1:%d 2:%d\n",coords[coord1][coord2],coord1,coord2);
+					}
+				}
+
+	 VGA_text(5, 3, "          \0");
+	 VGA_box(0,0,319,239,0x47FF);
+
+	 	 VGA_box(4,4,79,234,0);
+	 	 VGA_box(84,4,314,234,0x0000);
+	 	 VGA_text(3,3,"                            \0");
+
+	 	OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
+}
