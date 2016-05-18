@@ -17,7 +17,7 @@
 void LCD_cursor_off( void );
 void VGA_text (int, int, char *);
 void VGA_box (int, int, int, int, short);
-void Array_Reset( void );
+void Game_Reset( void );
 
 #define   TASK_STACKSIZE       2048
 #define	  GRIDTASK_STACKSIZE	131072
@@ -58,7 +58,6 @@ void speler(void* pdata)
 
 	while (1)
 	{
-		// border hit detection
 		ALT_SEM_PEND(bezig,0);
 		ALT_SEM_PEND(af, 0);
 
@@ -74,8 +73,8 @@ void speler(void* pdata)
 				h=15;
 				lengte=5;
 				hoogte=5;
-				Array_Reset();
-				OSTimeDlyHMSM(0, 0, 2, 0);
+				Game_Reset();
+				OSTimeDlyHMSM(0, 0, 3, 0);
 				resetten=0;
 				spelerAf=0;
 				state =1;
@@ -84,6 +83,11 @@ void speler(void* pdata)
 			ALT_SEM_POST(af);
 		}
 		else{
+			ALT_SEM_PEND(resetWaarde,0);
+			if(resetten>=1){
+			resetten=0;
+			}
+			ALT_SEM_POST(resetWaarde);
 		ALT_SEM_POST(af);
 		ALT_SEM_PEND(states, 0);
 	  	if (stateMin)
@@ -266,7 +270,7 @@ int main(void)
 	ALT_SEM_CREATE(&spelerKlaar, 0);
 
 
-	Array_Reset();
+	Game_Reset();
 
 
 	OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
@@ -336,10 +340,10 @@ void VGA_box(int x1, int y1, int x2, int y2, short pixel_color)
 /****************************************************************************************
  * Reset the array
  ****************************************************************************************/
-void Array_Reset(void){
+void Game_Reset(void){
 	int coord1;
 	int coord2;
-
+	// shows game is resetting
 	VGA_text(5, 3, "RESETTING \0");
 	for(coord1=0;coord1<115;coord1++)
 				{	printf("Data Cleared %d    %d \n",coord1,coords[coord1][5]);
@@ -352,21 +356,20 @@ void Array_Reset(void){
 				}
 	printf("Data Cleared");
 	 VGA_text(5, 3, "          \0");
-//	 VGA_box(0,0,319,239,0x47FF);
-//
-//	 	 VGA_box(5,5,80,235,0);
-//	 	 VGA_box(85,5,315,235,0x0000);
 
-	 	//blauwe randjes
-	 		VGA_box(0,0,3,239,0x47FF);
-	 		VGA_box(0,0,319,3,0x47FF);
-	 		VGA_box(80,0,83,239,0x47FF);
+
+	 		//Blue borders
+	 		VGA_box(0,0,4,239,0x47FF);
+	 		VGA_box(0,0,319,4,0x47FF);
+	 		VGA_box(80,0,84,239,0x47FF);
 	 		VGA_box(0,236,319,239,0x47FF);
 	 		VGA_box(316,0,319,239,0x47FF);
 
-	 		//zwarte vlakken
+	 		//Score and Play area
 	 		VGA_box(5,5,79,235,0);
-	 			 	 VGA_box(85,5,315,235,0x0000);
+	 		VGA_box(85,5,315,235,0x0000);
+
+	 		//clear game over
 	 	 VGA_text(3,3,"                            \0");
 
 	 	//OSTaskCreateExt(speler,NULL,(void *)&speler_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler_stk,TASK_STACKSIZE,NULL,0);
