@@ -11,11 +11,6 @@
 #define SPELER3 		2
 #define SPELER4 		3
 
-
-
-
-
-
 #include <stdio.h>
 #include "includes.h"
 #include "altera_up_avalon_character_lcd.h"
@@ -42,11 +37,12 @@ ALT_SEM(pos)
 ALT_SEM(af)
 ALT_SEM(states)
 ALT_SEM(bezig)
-ALT_SEM(spelerKlaar)
+ALT_SEM(spelerScore)
 
 int hoogte[4];
 int lengte[4];
-int spelerAf[3];
+int spelerAf[4];
+int score[4];
 int resetten = 0;
 int statePlus;
 int stateMin;
@@ -55,8 +51,6 @@ int coords [115][115];
 int coords1;
 int coords2;
 
-
-
 void speler(void* pdata)
 {
 	int l;
@@ -64,81 +58,99 @@ void speler(void* pdata)
 	int state;
 	int i;
 	int spelerID = (int)(pdata);
-	printf("%d", spelerID);
+	unsigned int kleur;
+	char punten[40];
+	int af;
 	spelerAf[spelerID]=0;
 
-
 	if(spelerID==0){
-	l= 95;
-	h = 15;
-	state = 1;
-	lengte[spelerID] = 5;
-	hoogte[spelerID] = 5;
-
+		l= 95;
+		h = 15;
+		state = 1;
+		lengte[spelerID] = 5;
+		hoogte[spelerID] = 5;
+		kleur = 0x0F00;
+		VGA_text(3, ((spelerID+1) * 6), "Player 1 \0");
 	}else if(spelerID==1){
+		l= 295;
+		h = 15;
+		state = 1;
+		lengte[spelerID] = 105;
+		hoogte[spelerID] = 5;
+		kleur = 0xF000;
+		VGA_text(3, ((spelerID+1) * 6), "Player 2 \0");
+	}else if(spelerID==2){
+		l= 95;
+		h = 215;
+		state = 3;
+		lengte[spelerID] = 5;
+		hoogte[spelerID] = 105;
+		kleur = 0x00FF;
+		VGA_text(3, ((spelerID+1) * 6), "Player 3 \0");
+	}else if(spelerID==3){
 		l= 295;
 		h = 215;
 		state = 3;
 		lengte[spelerID] = 105;
 		hoogte[spelerID] = 105;
-
+		kleur = 0xFF00;
+		VGA_text(3, ((spelerID+1) * 6), "Player 4 \0");
 	}
-	else if(spelerID==2){
-			l= 95;
-			h = 215;
-			state = 3;
-			lengte[spelerID] = 5;
-			hoogte[spelerID] = 105;
 
-		}
-	else{
-			l= 295;
-			h = 15;
-			state = 1;
-			lengte[spelerID] = 105;
-			hoogte[spelerID] = 5;
-
-		}
 
 	while (1)
 	{
-		//ALT_SEM_PEND(spelerKlaar,0);
-		ALT_SEM_PEND(af, 0);
-		//printf("%d \n", spelerID);
-		if (spelerAf[spelerID] == 1 )
+		ALT_SEM_PEND(pos, 0);
+
+		if(hoogte[spelerID] >=115 || hoogte[spelerID] <=0)
 		{
-
-			VGA_text(5, 3, "GAME OVER \0");
-			//if(spelerAf[1] == 1&& spelerAf[2] == 1 && spelerAf[3] == 1){
-
-
-			ALT_SEM_PEND(resetWaarde,0);
-			OSTimeDlyHMSM(1, 0, 0, 0);
-			if(resetten==1){
-				resetten=0;
-				//printf("%d \n", spelerID);
-				l=95;
-				h=15;
-				lengte[1]=5;
-				hoogte[1]=5;
-				Game_Reset();
-				OSTimeDlyHMSM(0, 0, 3, 0);
-				resetten=0;
-				spelerAf[spelerID]=0;
-				state =1;
-	//}
-
-			ALT_SEM_POST(resetWaarde);
-			}
-			ALT_SEM_POST(af);
+			af = 1;
+		} else if (lengte[spelerID] >=115 || lengte[spelerID] <=0)
+		{
+			af = 1;
+		} else if (coords[hoogte[spelerID]][lengte[spelerID]]==1)
+		{
+			af = 1;
+		} else
+		{
+			coords[hoogte[spelerID]][lengte[spelerID]]=1;
 		}
-		else{
-			ALT_SEM_PEND(resetWaarde,0);
-			if(resetten>=1){
-			resetten=0;
+
+		ALT_SEM_POST(pos);
+		ALT_SEM_PEND(spelerScore,0);
+		if(af == 1){
+			ALT_SEM_PEND(af, 0);
+			if(spelerAf[0] == 0){
+				spelerAf[0] = spelerID;
+			}else if(spelerAf[1] == 0){
+				spelerAf[1] = spelerID;
+				score[spelerID] = score[spelerID] +1;
+			}else if(spelerAf[2] == 0){
+				spelerAf[2] = spelerID;
+				score[spelerID] = score[spelerID] +2;
+			}else{
+				spelerAf[3] = spelerID;
+				score[spelerID] = score[spelerID] +3;
 			}
-			ALT_SEM_POST(resetWaarde);
-		ALT_SEM_POST(af);
+
+			sprintf(punten,"%d \0", score[spelerID]);
+
+			VGA_text(3, (((spelerID+1) * 6)+2), "GAME OVER \0");
+			VGA_text(18, ((spelerID+1) * 6), punten);
+
+			ALT_SEM_POST(spelerScore);
+			ALT_SEM_POST(af);
+
+			OSTaskDel(OS_PRIO_SELF);
+		}
+		ALT_SEM_POST(spelerScore);
+
+//			ALT_SEM_PEND(resetWaarde,0);
+//			if(resetten>=1){
+//			resetten=0;
+//			}
+//			ALT_SEM_POST(resetWaarde);
+
 		ALT_SEM_PEND(states, 0);
 	  	if (stateMin)
 	  	{
@@ -169,7 +181,7 @@ void speler(void* pdata)
 			{
 				h++;
 				//tekenen locatie
-				VGA_box(l,h,l,h,0x0F00);
+				VGA_box(l,h,l,h,kleur);
 				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
@@ -184,7 +196,7 @@ void speler(void* pdata)
 			{
 				l++;
 				//tekenen locatie
-				VGA_box(l,h,l,h,0x0F00);
+				VGA_box(l,h,l,h,kleur);
 				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
@@ -199,7 +211,7 @@ void speler(void* pdata)
 			{
 				h--;
 				//tekenen locatie
-				VGA_box(l,h,l,h,0x0F00);
+				VGA_box(l,h,l,h,kleur);
 				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
@@ -214,7 +226,7 @@ void speler(void* pdata)
 			{
 				l--;
 				//tekenen locatie
-				VGA_box(l,h,l,h,0x0F00);
+				VGA_box(l,h,l,h,kleur);
 				OSTimeDlyHMSM(0, 0, 0, 500);
 			}
 			//opslaan in grid
@@ -224,42 +236,11 @@ void speler(void* pdata)
 
 			ALT_SEM_POST(pos);
 		}
-		}
-		ALT_SEM_PEND(pos, 0);
-
-				if(hoogte[spelerID] >=115 || hoogte[spelerID] <=0)
-				{
-					ALT_SEM_PEND(af, 0);
-					spelerAf[spelerID] = 1;
-					ALT_SEM_POST(af);
-					printf("border hit %d\n",spelerID);
-				} else if (lengte[spelerID] >=115 || lengte[spelerID] <=0)
-				{
-					ALT_SEM_PEND(af, 0);
-					spelerAf[spelerID] = 1;
-					ALT_SEM_POST(af);
-					printf("border hit %d\n",spelerID);
-				} else if (coords[hoogte[spelerID]][lengte[spelerID]]==1)
-				{
-					ALT_SEM_PEND(af, 0);
-					spelerAf[spelerID] = 1;
-					ALT_SEM_POST(af);
-					printf("lijn hit%d\n", spelerID);
-				} else
-				{
-					coords[hoogte[spelerID]][lengte[spelerID]]=1;
-					printf("niets aan de hand %d \n", spelerID);
-				}
-
-		ALT_SEM_POST(pos);
-
 
 		//vertraging om andere tasks tijd te geven
-		//ALT_SEM_POST(spelerKlaar);
 		OSTimeDlyHMSM(0, 0, 0, 500);
 	}
 }
-
 
 
 void invoer(void* pdata)
@@ -308,18 +289,18 @@ int main(void)
 	ALT_SEM_CREATE(&states, 1);
 	ALT_SEM_CREATE(&resetWaarde, 1);
 	ALT_SEM_CREATE(&bezig, 1);
-	ALT_SEM_CREATE(&spelerKlaar, 0);
+	ALT_SEM_CREATE(&spelerScore, 1);
 
 
 	Game_Reset();
 
-	printf("t1 ");
+
 	OSTaskCreateExt(speler,SPELER1,(void *)&speler1_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler1_stk,TASK_STACKSIZE,NULL,0);
-	printf("t2 ");
+
 	OSTaskCreateExt(speler,SPELER2,(void *)&speler2_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+1,SPELER_PRIORITY+1,speler2_stk,TASK_STACKSIZE,NULL,0);
-	printf("t3 ");
+
 	OSTaskCreateExt(speler,SPELER3,(void *)&speler3_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+2,SPELER_PRIORITY+2,speler3_stk,TASK_STACKSIZE,NULL,0);
-	printf("t4 ");
+
 	OSTaskCreateExt(speler,SPELER4,(void *)&speler4_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+3,SPELER_PRIORITY+3,speler4_stk,TASK_STACKSIZE,NULL,0);
 
 	OSTaskCreateExt(invoer, NULL, (void *)&invoer_stk[TASK_STACKSIZE - 1], INVOER_PRIORITY, INVOER_PRIORITY, invoer_stk, TASK_STACKSIZE, NULL, 0);
@@ -391,48 +372,58 @@ void Game_Reset(void){
 	int coord1;
 	int coord2;
 	int i;
+	int j;
 	// shows game is resetting
 	VGA_text(5, 3, "RESETTING \0");
+
 	for(coord1=0;coord1<115;coord1++)
-				{	//printf("Data Cleared %d    %d \n",coord1,coords[coord1][5]);
-					for(coord2=0;coord2<115;coord2++)
-					{
-						coords[coord1][coord2] = 0;
-						//printf("Data:%d 1:%d 2:%d\n",coords[coord1][coord2],coord1,coord2);
-					}
-					//printf("Data Cleared %d    %d \n",coord1,coords[coord1][5]);
-				}
-	//printf("Data Cleared");
+	{
+		for(coord2=0;coord2<115;coord2++)
+		{
+			coords[coord1][coord2] = 0;
+		}
+	}
 	for(i=0;i<3;i++){
 		spelerAf[i]=0;
 	}
-	 VGA_text(5, 3, "          \0");
+
+	 VGA_text(3, 6, "                \0");
+	 VGA_text(3, 8, "                \0");
+	 VGA_text(3, 12, "                \0");
+	 VGA_text(3, 14, "                \0");
+	 VGA_text(3, 18, "                \0");
+	 VGA_text(3, 20, "                \0");
+	 VGA_text(3, 24, "                \0");
+	 VGA_text(3, 26, "                \0");
+
+	 ALT_SEM_PEND(spelerScore,0);
+	 for(j = 0; j < 5; j++){
+		 score[j-1] = 0;
+	 }
+	 ALT_SEM_POST(spelerScore);
+
+	//Blue borders
+	VGA_box(0,0,3,239,0x22F0);
+	VGA_box(0,0,319,3,0x22F0);
+	VGA_box(81,0,83,239,0x22F0);
+	VGA_box(0,237,319,239,0x22F0);
+	VGA_box(317,0,319,239,0x22F0);
+
+	//lightblue borders
+	VGA_box(4,4,4,236,0x47FF);
+	VGA_box(4,4,80,4,0x47FF);
+	VGA_box(84,4,316,4,0x47FF);
+	VGA_box(80,4,80,236,0x47FF);
+	VGA_box(84,4,84,236,0x47FF);
+	VGA_box(4,236,80,236,0x47FF);
+	VGA_box(84,236,316,236,0x47FF);
+	VGA_box(316,4,316,236,0x47FF);
 
 
-			//Blue borders
-			VGA_box(0,0,3,239,0x22F0);
-			VGA_box(0,0,319,3,0x22F0);
-			VGA_box(81,0,83,239,0x22F0);
-			VGA_box(0,237,319,239,0x22F0);
-			VGA_box(317,0,319,239,0x22F0);
+	//Score and Play area
+	VGA_box(5,5,79,235,0);
+	VGA_box(85,5,315,235,0x0000);
 
-			//lightblue borders
-			VGA_box(4,4,4,236,0x47FF);
-			VGA_box(4,4,80,4,0x47FF);
-			VGA_box(84,4,316,4,0x47FF);
-			VGA_box(80,4,80,236,0x47FF);
-			VGA_box(84,4,84,236,0x47FF);
-			VGA_box(4,236,80,236,0x47FF);
-			VGA_box(84,236,316,236,0x47FF);
-			VGA_box(316,4,316,236,0x47FF);
-
-
-	 		//Score and Play area
-	 		VGA_box(5,5,79,235,0);
-	 		VGA_box(85,5,315,235,0x0000);
-
-	 		//clear game over
-	 	 VGA_text(3,3,"                            \0");
-
-
+	//clear game over
+	VGA_text(3,3,"                            \0");
 }
