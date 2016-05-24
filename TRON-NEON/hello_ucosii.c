@@ -60,7 +60,7 @@ void speler(void* pdata)
 	int spelerID = (int)(pdata);
 	unsigned int kleur;
 	char punten[40];
-	int af;
+	int Af=0;
 	spelerAf[spelerID]=0;
 
 	if(spelerID==0){
@@ -104,13 +104,13 @@ void speler(void* pdata)
 
 		if(hoogte[spelerID] >=115 || hoogte[spelerID] <=0)
 		{
-			af = 1;
+			Af = 1;
 		} else if (lengte[spelerID] >=115 || lengte[spelerID] <=0)
 		{
-			af = 1;
+			Af = 1;
 		} else if (coords[hoogte[spelerID]][lengte[spelerID]]==1)
 		{
-			af = 1;
+			Af = 1;
 		} else
 		{
 			coords[hoogte[spelerID]][lengte[spelerID]]=1;
@@ -118,22 +118,22 @@ void speler(void* pdata)
 
 		ALT_SEM_POST(pos);
 		ALT_SEM_PEND(spelerScore,0);
-		if(af == 1){
+		if(Af == 1){
 			ALT_SEM_PEND(af, 0);
 			if(spelerAf[0] == 0){
-				spelerAf[0] = spelerID;
+				spelerAf[0] = spelerID+1;
 			}else if(spelerAf[1] == 0){
-				spelerAf[1] = spelerID;
+				spelerAf[1] = spelerID+1;
 				score[spelerID] = score[spelerID] +1;
 			}else if(spelerAf[2] == 0){
-				spelerAf[2] = spelerID;
+				spelerAf[2] = spelerID+1;
 				score[spelerID] = score[spelerID] +2;
 			}else{
-				spelerAf[3] = spelerID;
+				spelerAf[3] = spelerID+1;
 				score[spelerID] = score[spelerID] +3;
 			}
 
-			sprintf(punten,"%d \0", score[spelerID]);
+			sprintf(punten,"%d", score[spelerID]);
 
 			VGA_text(3, (((spelerID+1) * 6)+2), "GAME OVER \0");
 			VGA_text(18, ((spelerID+1) * 6), punten);
@@ -145,11 +145,6 @@ void speler(void* pdata)
 		}
 		ALT_SEM_POST(spelerScore);
 
-//			ALT_SEM_PEND(resetWaarde,0);
-//			if(resetten>=1){
-//			resetten=0;
-//			}
-//			ALT_SEM_POST(resetWaarde);
 
 		ALT_SEM_PEND(states, 0);
 	  	if (stateMin)
@@ -255,9 +250,16 @@ void invoer(void* pdata)
 
 		if (KEY_value == 0x2)					// check KEY1
 		{
-			ALT_SEM_PEND(resetWaarde, 0);
-			resetten = 1;		//ga resetten
-			ALT_SEM_POST(resetWaarde);
+			if(spelerAf[0]!=0&&spelerAf[1]!=0&&spelerAf[2]!=0&&spelerAf[3]!=0){
+				Game_Reset();
+
+				OSTaskCreateExt(speler,SPELER1,(void *)&speler1_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler1_stk,TASK_STACKSIZE,NULL,0);
+				OSTaskCreateExt(speler,SPELER2,(void *)&speler2_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+1,SPELER_PRIORITY+1,speler2_stk,TASK_STACKSIZE,NULL,0);
+				OSTaskCreateExt(speler,SPELER3,(void *)&speler3_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+2,SPELER_PRIORITY+2,speler3_stk,TASK_STACKSIZE,NULL,0);
+				OSTaskCreateExt(speler,SPELER4,(void *)&speler4_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+3,SPELER_PRIORITY+3,speler4_stk,TASK_STACKSIZE,NULL,0);
+
+
+			}
 
 
 		}
@@ -372,10 +374,11 @@ void Game_Reset(void){
 	int coord1;
 	int coord2;
 	int i;
-	int j;
 	// shows game is resetting
 	VGA_text(5, 3, "RESETTING \0");
 
+
+	//clears array
 	for(coord1=0;coord1<115;coord1++)
 	{
 		for(coord2=0;coord2<115;coord2++)
@@ -386,21 +389,16 @@ void Game_Reset(void){
 	for(i=0;i<3;i++){
 		spelerAf[i]=0;
 	}
-
-	 VGA_text(3, 6, "                \0");
-	 VGA_text(3, 8, "                \0");
-	 VGA_text(3, 12, "                \0");
-	 VGA_text(3, 14, "                \0");
-	 VGA_text(3, 18, "                \0");
-	 VGA_text(3, 20, "                \0");
-	 VGA_text(3, 24, "                \0");
-	 VGA_text(3, 26, "                \0");
-
-	 ALT_SEM_PEND(spelerScore,0);
-	 for(j = 0; j < 5; j++){
-		 score[j-1] = 0;
-	 }
-	 ALT_SEM_POST(spelerScore);
+	//clears screen of text
+	 VGA_text(3,3,   "                            \0");
+	 VGA_text(3, 6,  "                            \0");
+	 VGA_text(3, 8,  "                            \0");
+	 VGA_text(3, 12, "                            \0");
+	 VGA_text(3, 14, "                            \0");
+	 VGA_text(3, 18, "                            \0");
+	 VGA_text(3, 20, "                            \0");
+	 VGA_text(3, 24, "                            \0");
+	 VGA_text(3, 26, "                            \0");
 
 	//Blue borders
 	VGA_box(0,0,3,239,0x22F0);
@@ -418,7 +416,6 @@ void Game_Reset(void){
 	VGA_box(4,236,80,236,0x47FF);
 	VGA_box(84,236,316,236,0x47FF);
 	VGA_box(316,4,316,236,0x47FF);
-
 
 	//Score and Play area
 	VGA_box(5,5,79,235,0);
