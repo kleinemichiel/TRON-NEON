@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<!--Created by Liquid XML 2008 (www.liquid-technologies.com) for Altera-->
+<ProgramExecution xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+	<QuartusExecution>
+		<AddressBits>64</AddressBits>
+		<ApplicationError>
+		<Bits>64</Bits>
+		<CommandLine>quartus_pgmw</CommandLine>
+		<ErrorMessage>m_ocpp_dlg == NULL</ErrorMessage>
+		<Line>326</Line>
+		<Platform>windows</Platform>
+		<SourceFile>/quartus/pgm/pgmwq/pgmwq_frame_wnd.cpp</SourceFile>
+		<StackTrace>
+	0x7ff9f1e9917a: pgm_pgmwq + 0x2917a
+	0x7ff9f1e9a5a3: pgm_pgmwq + 0x2a5a3
+	 0x69b8f9b4: QtCore4 + 0x11f9b4 (?event@QObject@@UEAA_NPEAVQEvent@@@Z + 0xa4)
+	 0x69dc1402: QtGui4 + 0x61402 (?event@QWidget@@MEAA_NPEAVQEvent@@@Z + 0xd42)
+	 0x6a0f9d30: QtGui4 + 0x399d30 (?event@QMainWindow@@MEAA_NPEAVQEvent@@@Z + 0x280)
+	0x7ff9f1ebcf98: pgm_pgmwq + 0x4cf98
+	 0x69d82e95: QtGui4 + 0x22e95 (?notify_helper@QApplicationPrivate@@QEAA_NPEAVQObject@@PEAVQEvent@@@Z + 0xf5)
+	 0x69d82b2f: QtGui4 + 0x22b2f (?notify@QApplication@@UEAA_NPEAVQObject@@PEAVQEvent@@@Z + 0x17bf)
+	 0x69b7d92b: QtCore4 + 0x10d92b (?notifyInternal@QCoreApplication@@AEAA_NPEAVQObject@@PEAVQEvent@@@Z + 0x7b)
+	 0x69b7f502: QtCore4 + 0x10f502 (?sendPostedEvents@QCoreApplicationPrivate@@SAXPEAVQObject@@HPEAVQThreadData@@@Z + 0x2b2)
+	 0x69ba2fb8: QtCore4 + 0x132fb8 (?processEvents@QEventDispatcherWin32@@UEAA_NV?$QFlags@W4ProcessEventsFlag@QEventLoop@@@@@Z + 0xb98)
+	0x7ffa37141168: USER32 + 0x11168 (DispatchMessageW + 0x688)
+	0x7ffa37140c96: USER32 + 0x10c96 (DispatchMessageW + 0x1b6)
+	 0x69ba2802: QtCore4 + 0x132802 (?processEvents@QEventDispatcherWin32@@UEAA_NV?$QFlags@W4ProcessEventsFlag@QEventLoop@@@@@Z + 0x3e2)
+	 0x69de0eb4: QtGui4 + 0x80eb4 (?openPopup@QApplicationPrivate@@QEAAXPEAVQWidget@@@Z + 0x204)
+	 0x69b7a88b: QtCore4 + 0x10a88b (?exec@QEventLoop@@QEAAHV?$QFlags@W4ProcessEventsFlag@QEventLoop@@@@@Z + 0x22b)
+	 0x6a183660: QtGui4 + 0x423660 (?exec@QDialog@@QEAAHXZ + 0xf0)
+	0x7ff9f1edd500: pgm_pgmwq + 0x6d500
+	0x7ff9f1e86dd9: pgm_pgmwq + 0x16dd9
+	 0x69b8f9f7: QtCore4 + 0x11f9f7 (?event@QObject@@UEAA_NPEAVQEvent@@@Z + 0xe7)
+	 0x69dc1402: QtGui4 + 0x61402 (?event@QWidget@@MEAA_NPEAVQEvent@@@Z + 0xd42)
+	 0x6a0f9d30: QtGui4 + 0x399d30 (?event@QMainWindow@@MEAA_NPEAVQEvent@@@Z + 0x280)
+	0x7ff9f1ebcf98: pgm_pgmwq + 0x4cf98
+	 0x69d82e95: QtGui4 + 0x22e95 (?notify_helper@QApplicationPrivate@@QEAA_NPEAVQObject@@PEAVQEvent@@@Z + 0xf5)
+	 0x69d82b2f: QtGui4 + 0x22b2f (?notify@QApplication@@UEAA_NPEAVQObject@@PEAVQEvent@@@Z + 0x17bf)
+	 0x69b7d92b: QtCore4 + 0x10d92b (?notifyInternal@QCoreApplication@@AEAA_NPEAVQObject@@PEAVQEvent@@@Z + 0x7b)
+	 0x69b7f502: QtCore4 + 0x10f502 (?sendPostedEvents@QCoreApplicationPrivate@@SAXPEAVQObject@@HPEAVQThreadData@@@Z + 0x2b2)
+	 0x69ba2fb8: QtCore4 + 0x132fb8 (?processEvents@QEventDispatcherWin32@@UEAA_NV?$QFlags@W4ProcessEventsFlag@QEventLoop@@@@@Z + 0xb98)
+	0x7ffa37141168: USER32 + 0x11168 (DispatchMessageW + 0x688)
+	0x7ffa37140c96: USER32 + 0x10c96 (DispatchMessageW + 0x1b6)
+	 0x69ba2802: QtCore4 + 0x132802 (?processEvents@QEventDispatcherWin32@@UEAA_NV?$QFlags@W4ProcessEventsFlag@QEventLoop@@@@@Z + 0x3e2)
+	 0x69de0eb4: QtGui4 + 0x80eb4 (?openPopup@QApplicationPrivate@@QEAAXPEAVQWidget@@@Z + 0x204)
+	 0x69b7a88b: QtCore4 + 0x10a88b (?exec@QEventLoop@@QEAAHV?$QFlags@W4ProcessEventsFlag@QEventLoop@@@@@Z + 0x22b)
+	 0x69b7ce6f: QtCore4 + 0x10ce6f (?exec@QCoreApplication@@SAHXZ + 0xdf)
+	0x7ff78b3c1953: quartus_pgmw + 0x1953
+	0x7ffa27f32938: CCL_MSG + 0x12938 (?msg_initialize_out_of_memory_handler@@YAXXZ + 0x348)
+	0x7ffa27f33f5e: CCL_MSG + 0x13f5e (?msg_set_stack_size@@YAXH@Z + 0x7e)
+	0x7ffa28023e6e: ccl_mem + 0x3e6e (?mem_cfg_is_on@@YA_NPEBD_N@Z + 0x13e)
+	0x7ffa27f32021: CCL_MSG + 0x12021 (?msg_exe_main@@YAHHPEAPEBDP6AHH0@Z@Z + 0xa1)
+	0x7ff78b3c2497: quartus_pgmw + 0x2497
+	0x7ff78b3c1e04: quartus_pgmw + 0x1e04
+	0x7ffa372b8101: KERNEL32 + 0x18101 (BaseThreadInitThunk + 0x21)
+	0x7ffa3744c5b3: ntdll + 0x5c5b3 (RtlUserThreadStart + 0x33)
+		</StackTrace>
+		<Subsystem>PGMWQ</Subsystem>
+	</ApplicationError>
+	<Compilation>
+			<CompileID>0</CompileID>
+			<DeviceFamily/>
+			<IncrementalCompilation/>
+			<TopLevelEntityName/>
+		</Compilation>
+		<DateInvoked>2016/05/26 11:04:17</DateInvoked>
+		<ElapsedTime>83507</ElapsedTime>
+		<IP>145.44.101.203</IP>
+		<IsInternal>false</IsInternal>
+		<IsQt>true</IsQt>
+		<License>
+			<Edition>Lite Edition</Edition>
+			<LicenseHostID/>
+		</License>
+		<Machine>
+			<CPUCountLogical>8</CPUCountLogical>
+			<CPUCountPhysical>1</CPUCountPhysical>
+			<CPUSpeed>2394</CPUSpeed>
+			<Hostname>DESKTOP-8G51VAU</Hostname>
+			<NIC>
+				<Address>8c89a50d04c6</Address>
+			</NIC>
+			<NIC>
+				<Address>240a644a9b6a</Address>
+			</NIC>
+			<NIC>
+				<Address>240a644a9b6a</Address>
+			</NIC>
+			<OS>Windows 8</OS>
+			<OSAddressBits>64</OSAddressBits>
+			<OSVersion>6.2</OSVersion>
+			<Platform>windows</Platform>
+			<ScreenResolution>unknown</ScreenResolution>
+			<TotalPhysicalRAM>8112</TotalPhysicalRAM>
+			<TotalVirtualRAM>1280</TotalVirtualRAM>
+		</Machine>
+		<Name>quartus_pgmw</Name>
+		<PeakMemoryUsed>0</PeakMemoryUsed>
+		<ProjectRevision>
+			<ProjectName/>
+			<Revision/>
+		</ProjectRevision>
+		<QuartusInstallation>
+			<InstallationID>39627050899815.145458256303548</InstallationID>
+			<Version>
+				<Build>185</Build>
+				<BuildSite>SJ</BuildSite>
+				<BuildSuffix/>
+				<Edition>Lite Edition</Edition>
+				<ServicePack>0</ServicePack>
+				<VersionNumber>15.1</VersionNumber>
+			</Version>
+		</QuartusInstallation>
+		<QuartusUser>
+			<AlteraUserName/>
+			<FAEContactName/>
+			<TalkbackStatus>
+				<DateSet/>
+				<TalkbackOn>true</TalkbackOn>
+			</TalkbackStatus>
+			<UserID>39627050899815.14545825970584</UserID>
+			<UserName>michi</UserName>
+		</QuartusUser>
+	</QuartusExecution>
+	<SchemaVersion>schema_2013-01-18</SchemaVersion>
+</ProgramExecution>
+
