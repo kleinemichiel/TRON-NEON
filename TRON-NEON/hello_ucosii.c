@@ -1,7 +1,6 @@
 #define BUF_SIZE 500000			// about 10 seconds of buffer (@ 48K samples/sec)
 #define BUF_THRESHOLD 96		// 75% of 128 word buffer
 
-#define GRID_PRIORITY      	2
 #define INVOER_PRIORITY     1
 #define SPELER_PRIORITY		4
 #define MENU_PRIORITY		3
@@ -35,37 +34,39 @@ OS_STK    speler3_stk[TASK_STACKSIZE];
 OS_STK    speler4_stk[TASK_STACKSIZE];
 OS_STK    invoer_stk[TASK_STACKSIZE];
 
-ALT_SEM(resetWaarde)
+
 ALT_SEM(pos)
 ALT_SEM(af)
 ALT_SEM(states)
-ALT_SEM(bezig)
 ALT_SEM(spelerScore)
 
-int hoogte[4];
-int lengte[4];
-int spelerAf[4];
-int score[4];
-int resetten = 0;
-int statePlus[4];
-int stateMin[4];
 
-int coords [115][115];
-int coords1;
-int coords2;
+//global values
+int hoogte[4]; // for every player pos Y
+int lengte[4]; // for every player pos X
+int spelerAf[4]; // for every player a seperate value if the player is game over
+int score[4]; // for every player a seperate score
+int statePlus[4];// for every player a seperate value for the state + or state -
+int stateMin[4]; // for every player a seperate value for the state + or state -
+
+int coords [115][115]; // the coordinates of the playeble area
 
 void speler(void* pdata)
 {
+
+	//defining the values used in speler
 	int l;
 	int h;
 	int state;
 	int i;
-	int spelerID = (int)(pdata);
+	int spelerID = (int)(pdata); // spelerID is definded by pdata
 	unsigned int kleur;
 	char punten[40];
 	int Af=0;
 	spelerAf[spelerID]=0;
 
+
+	// for every player there is a different pdata
 	if(spelerID==0){
 		l= 95;
 		h = 15;
@@ -104,11 +105,10 @@ void speler(void* pdata)
 		VGA_box(10,94,45,109,0xEE00);
 	}
 
-
 	while (1)
 	{
 		ALT_SEM_PEND(pos, 0);
-
+		//hit detection for the player
 		if(hoogte[spelerID] >=115 || hoogte[spelerID] <=0)
 		{
 			Af = 1;
@@ -122,9 +122,10 @@ void speler(void* pdata)
 		{
 			coords[hoogte[spelerID]][lengte[spelerID]]=1;
 		}
-
 		ALT_SEM_POST(pos);
 		ALT_SEM_PEND(spelerScore,0);
+
+		// when the player dies his leds go off and his place and score get set
 		if(Af == 1){
 			ALT_SEM_PEND(af, 0);
 			if(spelerAf[0] == 0){
@@ -141,13 +142,11 @@ void speler(void* pdata)
 				}else{
 					alt_up_parallel_port_write_data(gpio_dev, 0x00013000);//alle leds behalve geel
 				}
-
 			}else if(spelerAf[1] == 0){
 				spelerAf[1] = spelerID+1;
 				score[spelerID] = score[spelerID] +1;
 				VGA_text(3, (((spelerID+1) * 6)+2), "Third \0");
 					if(spelerAf[0]==1){
-
 						if(spelerID==1){
 							alt_up_parallel_port_write_data(gpio_dev, 0x00018000);//alle leds behalve groen en rood
 						}
@@ -157,9 +156,6 @@ void speler(void* pdata)
 						else if(spelerID==3){
 							alt_up_parallel_port_write_data(gpio_dev, 0x00011000);//alle leds behalve groen en geel
 						}
-
-
-
 					}else if(spelerAf[0]==2){
 
 						if(spelerID==0){
@@ -171,7 +167,6 @@ void speler(void* pdata)
 						else if(spelerID==3){
 							alt_up_parallel_port_write_data(gpio_dev, 0x00012000);//alle leds behalve rood en geel
 						}
-
 					}else if(spelerAf[0]==3){
 
 						if(spelerID==0){
@@ -183,8 +178,6 @@ void speler(void* pdata)
 						if(spelerID==3){
 							alt_up_parallel_port_write_data(gpio_dev, 0x00003000);//alle leds behalve blauw en geel
 						}
-
-
 					}else if(spelerAf[0]==4){
 
 						if(spelerID==0){
@@ -196,23 +189,11 @@ void speler(void* pdata)
 						if(spelerID==2){
 							alt_up_parallel_port_write_data(gpio_dev, 0x00003000);//alle leds behalve blauw en geel
 						}
-
-
 					}
-
-
-
-
 			}else if(spelerAf[2] == 0){
 				spelerAf[2] = spelerID+1;
 				score[spelerID] = score[spelerID] +2;
 				VGA_text(3, (((spelerID+1) * 6)+2), "Second \0");
-
-				//alt_up_parallel_port_write_data(gpio_dev, 0x00001000);//rood
-				//alt_up_parallel_port_write_data(gpio_dev, 0x00002000);//groen
-				//alt_up_parallel_port_write_data(gpio_dev, 0x00008000);//geel
-				//alt_up_parallel_port_write_data(gpio_dev, 0x00010000);//blauw
-
 
 				if((spelerAf[0]==1&&spelerAf[1]==2)||(spelerAf[0]==2&&spelerAf[1]==1)){
 					if(spelerID==2){
@@ -279,12 +260,6 @@ void speler(void* pdata)
 					}
 
 				}
-
-
-
-
-
-
 			}else{
 				spelerAf[3] = spelerID+1;
 				score[spelerID] = score[spelerID] +3;
@@ -401,7 +376,6 @@ void menu(void* pdata){
 	int i;
 	int credits = 1;
 
-
 while(1){
 	ALT_SEM_PEND(states, 0);
 	if(statePlus[0]==1){
@@ -413,11 +387,7 @@ while(1){
 		stateMin[0]=0;
 		selected=1;
 	}
-
 	ALT_SEM_POST(states);
-
-
-
 
 	if(state==1){//play game
 	if(selected==1){
@@ -447,23 +417,17 @@ while(1){
 		for(i=0;i<=4;i++){
 			score[i]=0;
 		}
-
-
 		OSTimeDlyHMSM(0, 0, 12, 0);
 		OSTaskCreateExt(speler,SPELER1,(void *)&speler1_stk[TASK_STACKSIZE-1],SPELER_PRIORITY,SPELER_PRIORITY,speler1_stk,TASK_STACKSIZE,NULL,0);
 		OSTaskCreateExt(speler,SPELER2,(void *)&speler2_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+1,SPELER_PRIORITY+1,speler2_stk,TASK_STACKSIZE,NULL,0);
 		OSTaskCreateExt(speler,SPELER3,(void *)&speler3_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+2,SPELER_PRIORITY+2,speler3_stk,TASK_STACKSIZE,NULL,0);
 		OSTaskCreateExt(speler,SPELER4,(void *)&speler4_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+3,SPELER_PRIORITY+3,speler4_stk,TASK_STACKSIZE,NULL,0);
 
-
 		OSTaskDel(OS_PRIO_SELF);
-
-
-
 	}
 	if(Switch==1){
 	Switch=0;
-	//VGA_box(85,5,315,235,0x0000);
+
 	VGA_box(160,56,240,66,0xC0FC);
 	VGA_box(161,57,239,65,0x80CC);
 	VGA_text(45,15 , " PLAY GAME               \0");
@@ -494,10 +458,6 @@ while(1){
 			VGA_text(24,15 , " Made by the Great and Powerful Michiel van Dalfsen           \0");
 			VGA_text(24,17 , "    and by the Beautiful and Wise Daniek Borst :)              \0");
 
-
-
-
-
 			ALT_SEM_PEND(states, 0);
 			if(stateMin[0]==1)
 			{
@@ -509,31 +469,27 @@ while(1){
 			OSTimeDlyHMSM(0, 0, 1, 0);
 			alt_up_parallel_port_write_data(gpio_dev, 0x0001F000);//alle leds
 		}
-
 		credits = 1;
 
 		VGA_text(24,15 , "                                                                    \0");
 		VGA_text(24,17 , "                                                                    \0");
 
 		VGA_box(90,55,310,76, 0x0000);
-
+// button for play game
 		VGA_box(160,56,240,66,0xC0FC);
 		VGA_box(161,57,239,65,0x0000);
 		VGA_text(45,15 , " PLAY GAME               \0");
-
+// button for credits
 		VGA_box(160,76,240,86,0xC0FC);
 		VGA_box(161,77,239,85,0x80CC);
 		VGA_text(45,20 , "  CREDITS                    \0");
-
-
 	}
+
 	if(Switch==1){
 		Switch=0;
 		VGA_box(160,56,240,66,0xC0FC);
 		VGA_box(161,57,239,65,0x0000);
 		VGA_text(45,15 , " PLAY GAME               \0");
-
-
 
 		VGA_box(160,76,240,86,0xC0FC);
 		VGA_box(161,77,239,85,0x80CC);
@@ -544,17 +500,8 @@ while(1){
 	else if(state>2){
 		state=1;
 	}
-
-
-
-
-
-
-
 	OSTimeDlyHMSM(0, 0, 1, 0);
 }
-
-
 }
 
 void invoer(void* pdata)
@@ -570,7 +517,7 @@ void invoer(void* pdata)
 		*(KEY_ptr + 3) = 0; 						// Clear the interrupt
 
 
-		if (KEY_value == 0x2)					// check KEY1
+		if (KEY_value == 0x2)					// check KEY1 to reset game so you can play again, players keep their score
 		{
 			if(spelerAf[0]!=0&&spelerAf[1]!=0&&spelerAf[2]!=0&&spelerAf[3]!=0){
 				Game_Reset();
@@ -591,8 +538,6 @@ void invoer(void* pdata)
 				OSTaskCreateExt(speler,SPELER2,(void *)&speler2_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+1,SPELER_PRIORITY+1,speler2_stk,TASK_STACKSIZE,NULL,0);
 				OSTaskCreateExt(speler,SPELER3,(void *)&speler3_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+2,SPELER_PRIORITY+2,speler3_stk,TASK_STACKSIZE,NULL,0);
 				OSTaskCreateExt(speler,SPELER4,(void *)&speler4_stk[TASK_STACKSIZE-1],SPELER_PRIORITY+3,SPELER_PRIORITY+3,speler4_stk,TASK_STACKSIZE,NULL,0);
-
-
 			}
 
 		}
@@ -611,18 +556,11 @@ void invoer(void* pdata)
 					 VGA_text(3, 24, "                            \0");
 					 VGA_text(3, 26, "                            \0");
 				//clears player area
-				VGA_box(5,5,79,235,0);
+				VGA_box(5,5,79,149,0);
 
 				OSTaskCreateExt(menu,NULL,(void *)&menu_stk[TASK_STACKSIZE-1],MENU_PRIORITY,MENU_PRIORITY,menu_stk,TASK_STACKSIZE,NULL,0);
 			}
-
-
 		}
-		else if (KEY_value == 0x8)				// check KEY3
-		{
-			;
-		}
-		//	read bits
 
 
 		ALT_SEM_PEND(states, 0);
@@ -630,15 +568,13 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-		gpio_values &= 0x00000001;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+		gpio_values &= 0x00000001;		//	negates all the other ports exept port 1
 
 		if (gpio_values == 0){
 			if (veranderd[0] == 0){
 				statePlus[0]= 1;
 				veranderd[0] = 1;
-				//alt_up_parallel_port_write_data(gpio_dev, 0x00010000);//blauw
+
 				}
 			}
 			else{
@@ -647,15 +583,13 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-				//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-		gpio_values &= 0x00000002;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+		gpio_values &= 0x00000002;		//	negates all the other ports exept port 2
 
 		if (gpio_values == 0){
 			if (veranderd[1] == 0){
 			stateMin[0]= 1;
 			veranderd[1] = 1;
-			//alt_up_parallel_port_write_data(gpio_dev, 0x00002000);//groen
+
 			}
 		}
 		else
@@ -663,9 +597,7 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-			//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-		gpio_values &= 0x00000004;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+		gpio_values &= 0x00000004;		//		negates all the other ports exept port 3
 
 		if (gpio_values == 0){
 			if (veranderd[2] == 0){
@@ -678,9 +610,7 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-		gpio_values &= 0x00000008;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+		gpio_values &= 0x00000008;		//	negates all the other ports exept port 4
 
 		if (gpio_values == 0){
 			if (veranderd[3] == 0){
@@ -693,9 +623,7 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-			//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-			gpio_values &= 0x00000010;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+			gpio_values &= 0x00000010;		//	negates all the other ports exept port 5
 
 			if (gpio_values == 0){
 				if (veranderd[4] == 0){
@@ -708,9 +636,7 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-		gpio_values &= 0x00000020;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+		gpio_values &= 0x00000020;		//		negates all the other ports exept port 6
 
 		if (gpio_values == 0){
 			if (veranderd[5] == 0){
@@ -723,9 +649,7 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-		gpio_values &= 0x00000080;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+		gpio_values &= 0x00000080;		//		negates all the other ports exept port 8, we got no results from port 7 so we skipped it
 
 		if (gpio_values == 0){
 			if (veranderd[6] == 0){
@@ -738,9 +662,7 @@ void invoer(void* pdata)
 
 		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
 
-		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-
-		gpio_values &= 0x00000100;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
+		gpio_values &= 0x00000100;		//		negates all the other ports exept port 9
 
 		if (gpio_values == 0){
 			if (veranderd[7] == 0){
@@ -757,25 +679,19 @@ void invoer(void* pdata)
 	}
 }
 
-
-
-
 int main(void)
 {
  	gpio_dev = alt_up_parallel_port_open_dev("/dev/Expansion_JP5");		//	DE2-115 gpio
-	alt_up_parallel_port_set_port_direction(gpio_dev, 0x0001F000);		// 1-0-1-1	(1 = output; 0 = input)
+	alt_up_parallel_port_set_port_direction(gpio_dev, 0x0001F000);		// zet de poorten waaraan de leds gekoppelt zijn op output
 
-	//alt_up_parallel_port_write_data(gpio_dev, 0x0001F000);//alle leds
+	alt_up_parallel_port_write_data(gpio_dev, 0x0001F000);//alle leds aan
 
 	LCD_cursor_off();
 
 	ALT_SEM_CREATE(&pos, 1);
 	ALT_SEM_CREATE(&af, 1);
 	ALT_SEM_CREATE(&states, 1);
-	ALT_SEM_CREATE(&resetWaarde, 1);
-	ALT_SEM_CREATE(&bezig, 1);
 	ALT_SEM_CREATE(&spelerScore, 1);
-
 
 	Game_Reset();
 
@@ -786,11 +702,6 @@ int main(void)
 	OSStart();
 	return 0;
 }
-
-//Vga controller hieronder
-//		|
-//		|
-//	   \|/
 
 /****************************************************************************************
  * Subroutine to turn off the LCD cursor
@@ -839,9 +750,6 @@ void VGA_box(int x1, int y1, int x2, int y2, short pixel_color)
 		}
 	}
 }
-
-
-
 
 /****************************************************************************************
  * Reset the playfield
@@ -900,165 +808,103 @@ void Game_Reset(void){
 	VGA_box(5,5,79,235,0);
 	VGA_box(85,5,315,235,0x0000);
 
+	//TRON NEON
+
+	//LETTER T
+	VGA_box(15,151,15,170,0x00FF);
+	VGA_box(9,150,21,150,0x00FF);
+	VGA_box(9,151,9,153,0x00FF);
+	VGA_box(21,151,21,153,0x00FF);
+
+	//LETTER R
+	VGA_box(24,150,24,170,0xF000);
+	VGA_box(24,150,34,150,0xF000);
+	VGA_box(34,151,35,151,0xF000);
+	VGA_box(35,152,36,152,0xF000);
+	VGA_box(36,153,36,158,0xF000);
+	VGA_box(34,160,35,160,0xF000);
+	VGA_box(35,159,36,159,0xF000);
+	VGA_box(24,161,34,161,0xF000);
+	VGA_box(28,162,28,162,0xF000);
+	VGA_box(29,162,29,163,0xF000);
+	VGA_box(30,163,30,164,0xF000);
+	VGA_box(31,164,31,165,0xF000);
+	VGA_box(32,165,32,166,0xF000);
+	VGA_box(33,166,33,167,0xF000);
+	VGA_box(34,167,34,168,0xF000);
+	VGA_box(35,168,35,169,0xF000);
+	VGA_box(36,169,36,170,0xF000);
+
+	//LETTER O
+	VGA_box(39,151,39,169,0x0F00);
+	VGA_box(40,150,50,150,0x0F00);
+	VGA_box(40,170,50,170,0x0F00);
+	VGA_box(51,151,51,169,0x0F00);
+
+	//LETTER N
+	VGA_box(54,150,54,170,0xFF00);
+	VGA_box(66,150,66,170,0xFF00);
+	VGA_box(55,151,55,153,0xFF00);
+	VGA_box(56,153,56,154,0xFF00);
+	VGA_box(57,154,57,156,0xFF00);
+	VGA_box(58,156,58,157,0xFF00);
+	VGA_box(59,157,59,159,0xFF00);
+	VGA_box(60,159,60,160,0xFF00);
+	VGA_box(61,160,61,162,0xFF00);
+	VGA_box(62,162,62,163,0xFF00);
+	VGA_box(63,163,63,165,0xFF00);
+	VGA_box(64,165,64,166,0xFF00);
+	VGA_box(65,166,65,168,0xFF00);
+
+	// DUBBLE PUNT
+	VGA_box(70,155,71,156,0x47FF);
+	VGA_box(70,166,71,167,0x47FF);
+
+	//NEON
+
+	//LETTER N
+	VGA_box(9,175,9,195,0xFF00);
+	VGA_box(21,175,21,195,0xFF00);
+	VGA_box(10,176,10,178,0xFF00);
+	VGA_box(11,178,11,179,0xFF00);
+	VGA_box(12,179,12,181,0xFF00);
+	VGA_box(13,181,13,182,0xFF00);
+	VGA_box(14,182,14,184,0xFF00);
+	VGA_box(15,184,15,185,0xFF00);
+	VGA_box(16,185,16,187,0xFF00);
+	VGA_box(17,187,17,188,0xFF00);
+	VGA_box(18,188,18,190,0xFF00);
+	VGA_box(19,190,19,191,0xFF00);
+	VGA_box(20,191,20,193,0xFF00);
+
+	//LETTER E
+	VGA_box(24,175,24,195,0x0F00);
+	VGA_box(24,175,36,175,0x0F00);
+	VGA_box(24,185,34,185,0x0F00);
+	VGA_box(24,195,36,195,0x0F00);
+
+	//LETTER O
+	VGA_box(39,176,39,194,0x00FF);
+	VGA_box(40,175,50,175,0x00FF);
+	VGA_box(40,195,50,195,0x00FF);
+	VGA_box(51,176,51,194,0x00FF);
+
+	//LETTER N
+	VGA_box(54,175,54,195,0xF000);
+	VGA_box(66,175,66,195,0xF000);
+	VGA_box(55,176,55,178,0xF000);
+	VGA_box(56,178,56,179,0xF000);
+	VGA_box(57,179,57,181,0xF000);
+	VGA_box(58,181,58,182,0xF000);
+	VGA_box(59,182,59,184,0xF000);
+	VGA_box(60,184,60,185,0xF000);
+	VGA_box(61,185,61,187,0xF000);
+	VGA_box(62,187,62,188,0xF000);
+	VGA_box(63,188,63,190,0xF000);
+	VGA_box(64,190,64,191,0xF000);
+	VGA_box(65,191,65,193,0xF000);
+
 	//clear game over
+
 	VGA_text(3,3,"                            \0");
 }
-
-/****************************************************************************************
- * menu buttons
- ****************************************************************************************/
-
-
-
-
-
-
-////	testgpio  by Jan Verhoeven
-////
-////	de2(-115) media computer
-////
-////	schrijf naar GPIO, bits D0-D1-D3 output, overige bits input
-////	verbind een LEDje aan D0 en D1
-////	verbind met een draad D3 aan D31
-////
-//
-//#include <stdio.h>
-//#include "includes.h"
-//#include "altera_up_avalon_parallel_port.h"
-//#include "string.h"
-//
-//alt_up_parallel_port_dev *gpio_dev; //	gpio device
-//
-///* Definition of Task Stacks */
-//#define   TASK_STACKSIZE       2048
-//OS_STK task1_stk[TASK_STACKSIZE];
-//
-//
-///* Definition of Task Priorities */
-//
-//#define TASK1_PRIORITY      10
-//
-//
-//void task1(void* pdata) {
-//	int toggle = 1;
-//	int gpio_values;
-//
-//	while (1) {
-//
-////	toggle = ! toggle;
-////																		//	D3      D1  D0
-////		if (toggle)
-////			alt_up_parallel_port_write_data(gpio_dev, 0x00000000);		//	0 - 0 - 1 - 0
-////		else
-////			alt_up_parallel_port_write_data(gpio_dev, 0x00000000);		//	1 - 0 - 0 - 1
-//
-//		//	read bits
-//
-//
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//		gpio_values &= 0x00000001;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//		if (gpio_values == 0)
-//			printf("Off 1\n");
-//		else
-//			printf(" ");
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//				//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//		gpio_values &= 0x00000002;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//		if (gpio_values == 0)
-//			printf("Off 2\n");
-//		else
-//			printf(" ");
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//			//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//		gpio_values &= 0x00000004;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//		if (gpio_values == 0)
-//			printf("Off 3\n");
-//		else
-//			printf(" ");
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//		gpio_values &= 0x00000008;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//		if (gpio_values == 0)
-//			printf("Off 4\n");
-//		else
-//			printf(" ");
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//			//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//			gpio_values &= 0x00000010;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//			if (gpio_values == 0)
-//				printf("Off 5\n");
-//			else
-//				printf(" ");
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//		gpio_values &= 0x00000020;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//		if (gpio_values == 0)
-//			printf("Off 6\n");
-//		else
-//			printf(" ");
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//		gpio_values &= 0x00000080;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//		if (gpio_values == 0)
-//			printf("Off 7\n");
-//		else
-//			printf(" ");
-//
-//		gpio_values = alt_up_parallel_port_read_data(gpio_dev);
-//
-//		//	test alleen D31 (die krijgt via een externe verbinding de waarde van D3
-//
-//		gpio_values &= 0x00000100;		//	negeer alle andere bits, die zijn waarschijnlijk HOOG !
-//
-//		if (gpio_values == 0)
-//			printf("Off 8\n");
-//		else
-//			printf(" ");
-//
-//		OSTimeDlyHMSM(0, 0, 0,150);
-//	}
-//}
-//
-//
-///* The main function creates two task and starts multi-tasking */
-//int main(void) {
-//
-//	//	open device
-//	gpio_dev = alt_up_parallel_port_open_dev("/dev/Expansion_JP5");		//	DE2-115 gpio
-//	alt_up_parallel_port_set_port_direction(gpio_dev, 0x0);		// 1-0-1-1	(1 = output; 0 = input)
-//
-//	OSTaskCreateExt(task1, NULL, (void *) &task1_stk[TASK_STACKSIZE - 1],
-//			TASK1_PRIORITY, TASK1_PRIORITY, task1_stk, TASK_STACKSIZE, NULL, 0);
-//
-//	OSStart();
-//	return 0;
-//}
